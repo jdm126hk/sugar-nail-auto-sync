@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="color-scheme" content="light dark" />
+    <meta name="color-scheme" content="light" />
     <link rel="icon" href="data:," />
     <title>Sugar Nail 試甲效果</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -23,24 +23,7 @@
         --ok:#7D8C4F;
         --err:#B3402E;
         --shadow:0 10px 30px rgba(154,90,76,.14);
-        color-scheme:light;
-      }
-      @media (prefers-color-scheme: dark){
-        :root{
-          --pink:#3A2723;
-          --pink-deep:#463029;
-          --brown:#D89A8C;
-          --brown-dark:#E8B3A7;
-          --ink:#F7E3DE;
-          --ink-soft:#D9B8B0;
-          --card:#2E201C;
-          --line:#5A3D36;
-          --field:#241916;
-          --ok:#B7C48A;
-          --err:#F0937E;
-          --shadow:0 10px 30px rgba(0,0,0,.4);
-          color-scheme:dark;
-        }
+        color-scheme:light only;
       }
       *{box-sizing:border-box}
       html{scroll-behavior:smooth}
@@ -124,7 +107,6 @@
         display:none;margin-top:14px;padding:10px 14px;border-radius:12px;
         background:#FBE3DE;color:var(--err);font-weight:700;font-size:.93rem;
       }
-      @media (prefers-color-scheme: dark){ .error{background:#4A2620} }
       .error.show{display:block}
 
       .member-bar{
