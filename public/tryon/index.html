@@ -412,6 +412,11 @@
           <p style="font-weight:900;margin:22px 0 4px">帳戶管理</p>
           <p class="hint">掃客人張卡嘅 QR Code 即刻開帳戶，順便記低個名。未開帳戶嘅卡照樣登入到；停用或者作廢咗嘅帳戶就入唔到。</p>
           <div class="btn-row">
+            <button class="btn" id="btnSyncPass2u" type="button">🔄 同步客戶資料</button>
+          </div>
+          <p class="hint">撳一下，Muse 就會去 Pass2U 攞最新票卡資料同步過嚟（客人名、已用次數、下載連結），唔使你自己匯出匯入。新客掃 QR 拎咗新卡之後，撳呢個掣就會同步埋。</p>
+          <p class="hint" id="syncStatus" role="status"></p>
+          <div class="btn-row">
             <button class="btn" id="btnScanAccount" type="button">📷 掃 QR Code 開帳戶</button>
           </div>
           <div id="scanBox" hidden style="margin-top:14px">
@@ -995,7 +1000,24 @@
           });
         }
 
+        function loadSyncStatus(){
+          api("/api/admin/sync-request", {method:"GET", admin:true}).then(function(res){
+            if(res.ok === false) return;
+            var el = document.getElementById("syncStatus");
+            var parts = [];
+            if(res.request && res.request.status === "pending"){
+              parts.push("同步進行中：已經通知 Muse，佢會去 Pass2U 攞最新資料，同步好會話你知。");
+            }
+            if(res.lastSync){
+              var d = new Date(res.lastSync.at);
+              var when = d.toLocaleString("zh-HK", {timeZone:"Asia/Hong_Kong"});
+              parts.push("上次同步：" + when + "，共 " + res.lastSync.total + " 張卡（新增 " + res.lastSync.created + "，更新 " + res.lastSync.updated + "）。");
+            }
+            el.textContent = parts.length ? parts.join(" ") : "未同步過。";
+          });
+        }
         function loadAdminData(){
+          loadSyncStatus();
           api("/api/admin/accounts", {method:"GET", admin:true}).then(function(res){
             if(res.ok === false) return;
             renderAccounts(res.accounts || []);
@@ -1034,6 +1056,14 @@
           if(!id){ adminMsg.textContent = "請先輸入要重設嘅登入 ID（QR Code 內容）。"; return; }
           if(id.toUpperCase() === TEST_ID){ adminMsg.textContent = "TEST 係測試帳戶，本來就唔計次數、唔使重設。"; return; }
           resetUsageFor(id);
+        });
+
+        document.getElementById("btnSyncPass2u").addEventListener("click", function(){
+          var el = document.getElementById("syncStatus");
+          api("/api/admin/sync-request", {method:"POST", admin:true, body:{}}).then(function(res){
+            if(!res.ok){ el.textContent = res.error || "通知失敗，請再試一次。"; return; }
+            el.textContent = "已經通知 Muse 同步，佢會去 Pass2U 攞最新票卡資料同步過嚟，同步好會話你知。";
+          });
         });
 
         /* ---------- 帳戶管理：掃 QR 開帳戶／名單／CSV 匯入 ---------- */
