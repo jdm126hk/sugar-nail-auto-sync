@@ -1,6 +1,8 @@
 // Sugar Nail 試甲 API — Cloudflare Worker（免費層）
 // 職責：登入核對、每日限額計數、店主查用量／重設、記錄申請（連手相＋效果圖）。
-// 唔做：唔生成圖片（效果圖由 Muse 喺對話入面生成，店主上傳返入嚟）。
+// 唔做：正式流程唔生成圖片（效果圖由 Muse 喺對話入面生成，店主上傳返入嚟）。
+// 例外：POST /api/admin/ai-test 係測試端點（店主限定），用 Workers AI SDXL
+// 試做 image-to-image，證明 Worker 自己生成效果圖得唔得，唔影響正式流程。
 // 申請記錄（手相＋效果圖）保留 7 日，過期唔會再出現，要用 cleanup 先會真正刪除。
 // 密碼永遠唔會出現喺呢個檔案：核對值嚟自 Worker secrets
 // GUEST_PASSWORD_HASH / ADMIN_PASSWORD_HASH（SHA-256 hex）。
@@ -12,6 +14,11 @@ const LOGIN_MAX_FAILS = 10; // 每 IP 每 10 分鐘最多 10 次失敗登入
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 const RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 申請記錄保留 7 日（由提交時間起計）
 const MAX_IMAGE_CHARS = 7000000; // 相片 data URL 上限：約 5MB（base64 長度計）
+
+// Workers AI 測試用模型（官方文件：https://developers.cloudflare.com/workers-ai/models/stable-diffusion-xl-base-1.0/）。
+// ⚠️ 官方文件寫明呢個模型計劃棄用日期係 2026-11-20，測試完要再決定用邊個模型代替。
+const AI_TEST_MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0";
+const AI_TEST_DEFAULT_STRENGTH = 0.6; // img2img 轉換強度：愈低愈貼近原相
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -146,6 +153,40 @@ function imageTooBig(v) {
 
 function isHttpsUrl(v) {
   return typeof v === "string" && v.startsWith("https://");
+}
+
+function base64ToBytes(b64) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function bytesToBase64(bytes) {
+  let bin = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+
+// 將 Workers AI 回傳嘅圖片轉做 bytes。官方文件話 binding 會回 ReadableStream，
+// REST API 就回 {image: "<base64>"}；兩種都處理，免得模型升級換咗格式就壞。
+async function aiImageToBytes(result) {
+  if (!result) return null;
+  if (result instanceof ReadableStream) {
+    return new Uint8Array(await new Response(result).arrayBuffer());
+  }
+  if (typeof result.arrayBuffer === "function") {
+    return new Uint8Array(await result.arrayBuffer());
+  }
+  if (typeof result.image === "string" && result.image.length > 0) {
+    return base64ToBytes(result.image);
+  }
+  if (result instanceof Uint8Array) return result;
+  if (result instanceof ArrayBuffer) return new Uint8Array(result);
+  return null;
 }
 
 // ---------------- 申請記錄 ----------------
@@ -665,6 +706,72 @@ async function handleAdminTestSession(request, env) {
   return json({ ok: true, token });
 }
 
+/* Workers AI 測試（店主限定）：用 SDXL image-to-image 試生成一張效果圖。
+   只係測試端點，唔係正式流程——正式提交依然只係存申請，等 Muse 每 5 分鐘檢查生成。
+   輸入格式根據官方文件（https://developers.cloudflare.com/workers-ai/models/stable-diffusion-xl-base-1.0/）：
+   prompt（必填）、image_b64（純 base64，唔帶 data: 前綴）、strength（0–1，愈低愈貼近原相）、
+   num_steps（預設 20，上限 20）、guidance（預設 7.5）。SDXL 一次只食一張相加文字，
+   設計參考相唔可以直接傳入去，要靠 prompt 文字描述嗰款。
+   env.AI 係 wrangler.toml 嘅 [ai] binding；本地測試 mock 冇 AI 嗰陣回 503。
+   注意：binding 唔會回用量（neurons），用量要去 Cloudflare Dashboard → Workers AI 睇。 */
+async function handleAdminAiTest(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  if (!env.AI || typeof env.AI.run !== "function") {
+    return json({ ok: false, error: "AI 未設定" }, 503);
+  }
+  const body = await readJson(request);
+  const image = body?.image;
+  if (typeof image !== "string" || !image) {
+    return json({ ok: false, error: "請提供圖片" }, 400);
+  }
+  if (imageTooBig(image)) {
+    return json({ ok: false, error: "相太大，請用細啲嘅圖" }, 400);
+  }
+  if (!isDataUrlImage(image)) {
+    return json({ ok: false, error: "圖片格式唔啱，請用 JPG 或者 PNG" }, 400);
+  }
+  const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+  if (!prompt) {
+    return json({ ok: false, error: "請提供文字描述" }, 400);
+  }
+  let strength = AI_TEST_DEFAULT_STRENGTH;
+  if (body?.strength !== undefined && body?.strength !== null) {
+    const n = Number(body.strength);
+    if (!Number.isFinite(n) || n < 0 || n > 1) {
+      return json({ ok: false, error: "strength 要係 0 至 1 之間" }, 400);
+    }
+    strength = n;
+  }
+  // image_b64 要純 base64，唔帶 data:image/...;base64, 前綴。
+  const imageB64 = image.split(",", 2)[1] || "";
+  let bytes;
+  try {
+    const result = await env.AI.run(AI_TEST_MODEL, {
+      prompt,
+      image_b64: imageB64,
+      strength,
+      num_steps: 20,
+      guidance: 7.5,
+    });
+    bytes = await aiImageToBytes(result);
+  } catch (e) {
+    return json(
+      { ok: false, error: "AI 生成失敗：" + (e?.message || "未知錯誤") },
+      502,
+    );
+  }
+  if (!bytes || bytes.length === 0) {
+    return json({ ok: false, error: "AI 未回傳圖片" }, 502);
+  }
+  return json({
+    ok: true,
+    image: "data:image/png;base64," + bytesToBase64(bytes),
+    model: AI_TEST_MODEL,
+  });
+}
+
 // ---------------- 帳戶管理（店主） ----------------
 
 async function handleAdminAccountsList(request, env) {
@@ -879,6 +986,9 @@ export default {
     }
     if (path === "/api/admin/test-session" && request.method === "POST") {
       return handleAdminTestSession(request, env);
+    }
+    if (path === "/api/admin/ai-test" && request.method === "POST") {
+      return handleAdminAiTest(request, env);
     }
     if (path.startsWith("/api/admin/requests/") && request.method === "GET") {
       const id = path.slice("/api/admin/requests/".length);
