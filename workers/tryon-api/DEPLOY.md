@@ -118,7 +118,11 @@ Pass2U 模型「美甲套票」（Model ID 380564）係 6 次蓋章卡：卡面�
 
 **留意：** 下載連結喺張卡加入銀包之後會失效，頁面有提示叫客人搵店主再發過。完全即時自動同步要 Pass2U API key（首次免費試用 30 日，之後 NT$3,000／年）＋ webhook，未整。
 
-登入回覆而家有 `sessionsUsed`／`sessionsLeft`，頁面「我的套票卡」會顯示「套票剩餘：X 次（已用 Y 次，共 6 次）」。 |
+登入回覆而家有 `sessionsUsed`／`sessionsLeft`，頁面「我的套票卡」會顯示「套票剩餘：X 次（已用 Y 次，共 6 次）」。
+
+## 一鍵同步（店主撳掣，Muse 幫手做）
+
+管理畫面「帳戶管理」有個「🔄 同步客戶資料」掣：店主撳一下，`POST /api/admin/sync-request` 會記低一個 pending 請求；Muse 每半小時檢查一次，見到請求就去 Pass2U 匯出最新 CSV 再匯入，之後 `POST /api/admin/sync-complete` 記低結果（新增／更新／總數）同清走請求。`GET /api/admin/sync-request` 俾頁面顯示「同步進行中」定「上次同步」時間。 |
 
 帳戶規則：未登記嘅 QR 照樣用共用密碼登入到；有記錄而狀態係停用／作廢就唔俾登入。
 

@@ -306,6 +306,22 @@ console.log("== 帳戶管理 ==");
     body: { qr: "39515934", password: "test-guest-password" },
   });
   check("更新後剩餘次數變返 3", pl4.data?.sessionsLeft === 3);
+  // 同步客戶資料請求：店主撳掣記低請求，Muse 做完記低結果清走請求
+  const sr0 = await call("/api/admin/sync-request", { method: "GET", token: adminToken });
+  check("未撳過同步：無請求、無上次記錄", sr0.status === 200 && sr0.data?.request === null && sr0.data?.lastSync === null);
+  const sr1 = await call("/api/admin/sync-request", { method: "POST", token: adminToken });
+  check("撳同步掣記低 pending 請求", sr1.status === 200 && sr1.data?.request?.status === "pending");
+  const sr2 = await call("/api/admin/sync-request", { method: "GET", token: adminToken });
+  check("再查見到 pending 請求", sr2.data?.request?.status === "pending");
+  const sc = await call("/api/admin/sync-complete", {
+    body: { created: 2, updated: 10, total: 12 },
+    token: adminToken,
+  });
+  check("同步完成記低結果", sc.status === 200 && sc.data?.lastSync?.total === 12 && sc.data?.lastSync?.created === 2);
+  const sr3 = await call("/api/admin/sync-request", { method: "GET", token: adminToken });
+  check("同步完成後請求清走、上次記錄留低", sr3.data?.request === null && sr3.data?.lastSync?.total === 12);
+  const sr4 = await call("/api/admin/sync-request", { method: "POST" });
+  check("無 token 撳同步拒絕（401）", sr4.status === 401);
   // 無 token 唔俾開帳戶
   const noAuth = await call("/api/admin/accounts/create", {
     body: { qr: "cust999", name: "唔應該入到" },
