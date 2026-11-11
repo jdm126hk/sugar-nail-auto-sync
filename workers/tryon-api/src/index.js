@@ -5,6 +5,7 @@
 // GUEST_PASSWORD_HASH / ADMIN_PASSWORD_HASH（SHA-256 hex）。
 
 const DAILY_LIMIT = 3;
+const PACKAGE_TOTAL = 6; /* Pass2U 美甲套票（Model 380564）總共 6 次 */
 const SESSION_TTL_SECONDS = 24 * 60 * 60; // 24 小時
 const LOGIN_MAX_FAILS = 10; // 每 IP 每 10 分鐘最多 10 次失敗登入
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
@@ -31,6 +32,16 @@ function hkDate(now = new Date()) {
     month: "2-digit",
     day: "2-digit",
   }).format(now);
+}
+
+function passUrlFromPassId(passId) {
+  return "https://www.pass2u.net/d/" + encodeURIComponent(passId) + "?t=qr_code&openExternalBrowser=1";
+}
+
+function clampUsed(v) {
+  const n = typeof v === "number" ? v : parseInt(String(v ?? ""), 10);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(PACKAGE_TOTAL, n));
 }
 
 function normaliseQr(qr) {
@@ -241,6 +252,8 @@ async function handleLogin(request, env) {
     remaining: unlimited ? null : Math.max(0, DAILY_LIMIT - used),
     name: account?.name || "",
     passUrl: account?.passUrl || "",
+    sessionsUsed: account ? (account.used || 0) : null,
+    sessionsLeft: account ? Math.max(0, PACKAGE_TOTAL - (account.used || 0)) : null,
   });
 }
 
@@ -400,6 +413,8 @@ async function handleAdminAccountsList(request, env) {
       qr: a.qr,
       name: a.name || "",
       passUrl: a.passUrl || "",
+      sessionsUsed: a.used || 0,
+      sessionsLeft: Math.max(0, PACKAGE_TOTAL - (a.used || 0)),
       status: a.status || "active",
       createdAt: a.createdAt || 0,
       used,
@@ -419,13 +434,16 @@ async function handleAdminAccountsCreate(request, env) {
     return json({ ok: false, error: "請提供登入 ID（QR Code 內容）" }, 400);
   }
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const passUrl = typeof body?.passUrl === "string" ? body.passUrl.trim() : "";
+  let passUrl = typeof body?.passUrl === "string" ? body.passUrl.trim() : "";
+  const passId = typeof body?.passId === "string" ? body.passId.trim() : "";
+  if (!passUrl && passId) passUrl = passUrlFromPassId(passId);
+  const used = clampUsed(body?.used);
   const existing = await getAccount(env, qr);
   if (existing) {
     return json({ ok: true, account: existing, existed: true });
   }
   const now = Date.now();
-  const account = { qr, name, passUrl, status: "active", createdAt: now, updatedAt: now };
+  const account = { qr, name, passUrl, used, status: "active", createdAt: now, updatedAt: now };
   await putAccount(env, account);
   return json({ ok: true, account, existed: false });
 }
@@ -445,6 +463,8 @@ async function handleAdminAccountsUpdate(request, env) {
   }
   if (typeof body?.name === "string") account.name = body.name.trim();
   if (typeof body?.passUrl === "string") account.passUrl = body.passUrl.trim();
+  if (typeof body?.passId === "string" && body.passId.trim() && !body.passUrl) account.passUrl = passUrlFromPassId(body.passId.trim());
+  if (body?.used !== undefined) account.used = clampUsed(body.used);
   if (typeof body?.status === "string") {
     if (!ACCOUNT_STATUSES.includes(body.status)) {
       return json({ ok: false, error: "狀態唔啱" }, 400);
@@ -481,7 +501,10 @@ async function handleAdminAccountsImport(request, env) {
   for (const row of rows) {
     const qr = normaliseQr(row?.qr);
     const name = typeof row?.name === "string" ? row.name.trim() : "";
-    const passUrl = typeof row?.passUrl === "string" ? row.passUrl.trim() : "";
+    let passUrl = typeof row?.passUrl === "string" ? row.passUrl.trim() : "";
+    const passId = typeof row?.passId === "string" ? row.passId.trim() : "";
+    if (!passUrl && passId) passUrl = passUrlFromPassId(passId);
+    const used = row?.used === undefined ? null : clampUsed(row.used);
     if (!qr) {
       skipped++;
       continue;
@@ -489,9 +512,10 @@ async function handleAdminAccountsImport(request, env) {
     const existing = await getAccount(env, qr);
     const now = Date.now();
     if (existing) {
-      if (name || passUrl) {
+      if (name || passUrl || used !== null) {
         if (name) existing.name = name;
         if (passUrl) existing.passUrl = passUrl;
+        if (used !== null) existing.used = used;
         existing.updatedAt = now;
         await putAccount(env, existing);
         updated++;
@@ -499,7 +523,7 @@ async function handleAdminAccountsImport(request, env) {
         skipped++;
       }
     } else {
-      await putAccount(env, { qr, name, passUrl, status: "active", createdAt: now, updatedAt: now });
+      await putAccount(env, { qr, name, passUrl, used: used ?? 0, status: "active", createdAt: now, updatedAt: now });
       created++;
     }
   }
