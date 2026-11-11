@@ -151,7 +151,7 @@ curl -X POST $API/api/admin/ai-test \
 
 成功回 `{ok:true, image:"data:image/png;base64,...", model:"@cf/stabilityai/stable-diffusion-xl-base-1.0"}`；`env.AI` 未設定（例如本地測試 mock 冇 AI）回 503「AI 未設定」；AI 出錯回 502，唔會假裝成功。
 
-**輸入格式（已核實官方文件）：** 模型 `@cf/stabilityai/stable-diffusion-xl-base-1.0`，文件 https://developers.cloudflare.com/workers-ai/models/stable-diffusion-xl-base-1.0/。img2img 參數：`prompt`（必填文字）、`image_b64`（純 base64，唔帶 `data:` 前綴）、`strength`（0–1，預設 0.6；愈低愈貼近原相）、`num_steps`（預設 20，上限 20）、`guidance`（預設 7.5）。Binding（`env.AI.run`）回傳係 `ReadableStream` 圖片 bytes；程式亦兼容 REST 嗰種 `{image: "<base64>"}` 回覆。
+**輸入格式（已核實官方文件＋2026-11-11 live 實測）：** 模型 `@cf/stabilityai/stable-diffusion-xl-base-1.0`，文件 https://developers.cloudflare.com/workers-ai/models/stable-diffusion-xl-base-1.0/。img2img 參數：`prompt`（必填文字）、`image`（**整數陣列，原相 bytes；binding 必須用呢個，傳 `image_b64` 會失敗**）、`strength`（0–1，預設 0.6；愈低愈貼近原相）、`num_steps`（預設 20，上限 20）、`guidance`（預設 7.5）。Binding（`env.AI.run`）回傳係 `ReadableStream` 圖片 bytes；程式亦兼容 REST 嗰種 `{image: "<base64>"}` 回覆。
 
 **注意：**
 - **SDXL 一次只食一張相加文字**：手相當輸入相，設計款式只可以用 prompt 文字描述，唔可以直接傳設計參考相入去。所以效果未必有 Muse（兩張相對照）咁貼近原款，要實測比較質素先決定用唔用。
