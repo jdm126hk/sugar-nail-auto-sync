@@ -596,7 +596,8 @@ console.log("== Workers AI 測試（ai-test 端點）==");
   check("回覆有 model 名", ok.data?.model === "@cf/stabilityai/stable-diffusion-xl-base-1.0");
   const lastCall = env.AI.calls.at(-1);
   check("傳去 AI 嘅 model 啱", lastCall?.model === "@cf/stabilityai/stable-diffusion-xl-base-1.0");
-  check("傳去 AI 嘅係 image_b64（純 base64，唔帶 data: 前綴）", lastCall?.inputs?.image_b64 === SMALL_PHOTO.split(",", 2)[1]);
+  const expectedBytes = Array.from(Buffer.from(SMALL_PHOTO.split(",", 2)[1], "base64"));
+  check("傳去 AI 嘅係 image 整數陣列（原相 bytes）", Array.isArray(lastCall?.inputs?.image) && lastCall.inputs.image.length === expectedBytes.length && lastCall.inputs.image.every((v, i) => v === expectedBytes[i]));
   check("傳去 AI 嘅 strength 係 0.6", lastCall?.inputs?.strength === 0.6);
   check("傳去 AI 嘅 prompt 啱", lastCall?.inputs?.prompt === "paint the nails pink with Hello Kitty design");
   // 唔傳 strength 就用預設 0.6
