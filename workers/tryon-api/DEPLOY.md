@@ -95,7 +95,7 @@ curl -X POST $API/api/admin/reset \
 | 端點 | 用途 |
 | --- | --- |
 | `GET /api/health` | 健康檢查 |
-| `POST /api/login` | 客人登入（QR Code＋共用密碼；TEST 無限次） |
+| `POST /api/login` | 客人登入（QR Code＋共用密碼；TEST 無限次；回覆有客人名＋套票卡下載連結） |
 | `POST /api/quota` | 查今日剩餘次數 |
 | `POST /api/submit` | 記錄一次申請並扣次數（每日最多 3 次） |
 | `POST /api/admin/login` | 店主登入 |
@@ -106,7 +106,9 @@ curl -X POST $API/api/admin/reset \
 | `POST /api/admin/accounts/create` | 開帳戶（掃 QR Code；已存在回 existed:true） |
 | `POST /api/admin/accounts/update` | 改名／改狀態（active、disabled、void） |
 | `POST /api/admin/accounts/delete` | 刪除帳戶 |
-| `POST /api/admin/accounts/import` | CSV 匯入（每行 QR Code,客人姓名；新增＋補名） |
+| `POST /api/admin/accounts/import` | CSV 匯入（每行 QR Code,客人姓名,套票卡下載連結；新增＋補名） |
+
+帳戶可加 `passUrl`（套票卡下載連結）：開帳戶／更新／匯入都接受，客人登入後喺「我的套票卡」見到重新下載按鈕；登入頁亦會用登入 ID 即場畫返 QR Code（後備方法係用下載連結）。 |
 
 帳戶規則：未登記嘅 QR 照樣用共用密碼登入到；有記錄而狀態係停用／作廢就唔俾登入。
 

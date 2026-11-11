@@ -260,6 +260,29 @@ console.log("== 帳戶管理 ==");
   const list2 = await call("/api/admin/accounts", { method: "GET", token: adminToken });
   const r2 = list2.data?.accounts?.find((x) => x.qr === "cust002");
   check("匯入後 cust002 個名更新咗", r2?.name === "阿強（更新）");
+  // 套票卡連結：開帳戶嗰陣一齊存，登入嗰陣回返俾頁面顯示
+  const pc = await call("/api/admin/accounts/create", {
+    body: { qr: "pass001", name: "阿卡", passUrl: "https://www.pass2u.net/d/example-pass-link" },
+    token: adminToken,
+  });
+  check("開帳戶連卡連結一齊存到", pc.status === 200 && pc.data?.account?.passUrl === "https://www.pass2u.net/d/example-pass-link");
+  const pl = await call("/api/login", {
+    body: { qr: "pass001", password: "test-guest-password" },
+  });
+  check("登入回覆有客人名＋卡連結", pl.status === 200 && pl.data?.name === "阿卡" && pl.data?.passUrl === "https://www.pass2u.net/d/example-pass-link");
+  const pu = await call("/api/admin/accounts/update", {
+    body: { qr: "pass001", passUrl: "https://www.pass2u.net/d/updated-link" },
+    token: adminToken,
+  });
+  check("更新卡連結成功", pu.status === 200 && pu.data?.account?.passUrl === "https://www.pass2u.net/d/updated-link");
+  const pi = await call("/api/admin/accounts/import", {
+    body: { rows: [{ qr: "pass002", name: "阿 link", passUrl: "https://www.pass2u.net/d/csv-link" }] },
+    token: adminToken,
+  });
+  check("CSV 匯入連卡連結一齊新增", pi.status === 200 && pi.data?.created === 1);
+  const pl2 = await call("/api/admin/accounts", { method: "GET", token: adminToken });
+  const pr2 = pl2.data?.accounts?.find((x) => x.qr === "pass002");
+  check("帳戶名單見到 CSV 匯入嘅卡連結", pr2?.passUrl === "https://www.pass2u.net/d/csv-link");
   // 無 token 唔俾開帳戶
   const noAuth = await call("/api/admin/accounts/create", {
     body: { qr: "cust999", name: "唔應該入到" },
