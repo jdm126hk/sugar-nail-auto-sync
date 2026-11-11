@@ -287,12 +287,14 @@
             <h2 id="passTitle">我的套票卡</h2>
           </div>
           <p class="hint" id="passInfo"></p>
+          <p class="hint" id="passSessions" hidden style="font-weight:bold"></p>
           <div id="passQr" style="text-align:center;margin:6px 0 2px"></div>
           <p class="hint" id="passQrText" style="text-align:center"></p>
           <div class="btn-row" id="passActions">
             <a class="btn" id="btnPassDownload" href="#" target="_blank" rel="noopener">重新下載套票卡到銀包</a>
           </div>
           <p class="hint" id="passNoLink" hidden>你張卡未連結下載連結，如需重新下載套票卡，請經 WhatsApp 聯絡店主。</p>
+          <p class="hint">如果撳入去話連結已失效（張卡加入銀包之後舊連結會失效），請經 WhatsApp 聯絡店主再發過。</p>
         </section>
 
         <!-- 步驟 1：上傳手相 -->
@@ -441,7 +443,7 @@
           </label>
           <div class="usage-list" id="accountList"></div>
           <p style="font-weight:900;margin:22px 0 4px">CSV 匯入客人姓名</p>
-          <p class="hint">每行「QR Code,客人姓名,套票卡下載連結」：有 QR 就開帳戶或者補名，第三欄可唔填。可以用檔案上傳，或者直接貼上。</p>
+          <p class="hint">可以直接上傳 Pass2U 票卡管理「匯出」嘅 CSV，一次過同步晒所有客人名、已用次數同下載連結；或者每行「QR Code,客人姓名,套票卡下載連結」手寫匯入。</p>
           <div class="btn-row">
             <button class="btn ghost small" id="btnCsvFile" type="button">揀 CSV 檔案</button>
           </div>
@@ -500,6 +502,8 @@
           styleLink: null,     /* 揀咗作品嘅 IG 連結（有先填） */
           passName: "",
           passUrl: "",
+          sessionsUsed: null,
+          sessionsLeft: null,
           hasOwnRef: false,
           adminToken: null
         };
@@ -614,6 +618,13 @@
             passCard.hidden = false;
             document.getElementById("passInfo").textContent =
               (state.passName ? state.passName + " · " : "") + "登入 ID：" + state.memberId;
+            var sessEl = document.getElementById("passSessions");
+            if(typeof state.sessionsLeft === "number"){
+              sessEl.hidden = false;
+              sessEl.textContent = "套票剩餘：" + state.sessionsLeft + " 次（已用 " + state.sessionsUsed + " 次，共 6 次）";
+            } else {
+              sessEl.hidden = true;
+            }
             var hasLink = !!state.passUrl;
             document.getElementById("passActions").style.display = hasLink ? "" : "none";
             document.getElementById("passNoLink").hidden = hasLink;
@@ -650,6 +661,8 @@
               state.adminToken = res.token || res.adminToken;
               state.passName = "";
               state.passUrl = "";
+              state.sessionsUsed = null;
+              state.sessionsLeft = null;
               loginCard.hidden = true;
               document.getElementById("adminCard").style.display = "";
               adminPanel.hidden = false;
@@ -673,6 +686,8 @@
             state.remaining = (typeof res.remaining === "number") ? res.remaining : null;
             state.passName = res.name || "";
             state.passUrl = res.passUrl || "";
+            state.sessionsUsed = (typeof res.sessionsUsed === "number") ? res.sessionsUsed : null;
+            state.sessionsLeft = (typeof res.sessionsLeft === "number") ? res.sessionsLeft : null;
             state.adminAsUser = false;
             enterUserMode();
           });
@@ -688,6 +703,8 @@
           state.styleName = null;
           state.passName = "";
           state.passUrl = "";
+          state.sessionsUsed = null;
+          state.sessionsLeft = null;
           state.hasOwnRef = false;
           document.getElementById("myPassCard").hidden = true;
           document.getElementById("loginPw").value = "";
@@ -1055,7 +1072,7 @@
             badge.textContent = STATUS_LABEL[a.status] || a.status;
             left.appendChild(badge);
             var cnt = document.createElement("div"); cnt.className = "ucount";
-            cnt.textContent = "今日已用 " + (a.used || 0) + " 次，仲剩 " + (typeof a.remaining === "number" ? a.remaining : 3) + " 次 · 卡連結：" + (a.passUrl ? "已加" : "未加");
+            cnt.textContent = "今日已用 " + (a.used || 0) + " 次，仲剩 " + (typeof a.remaining === "number" ? a.remaining : 3) + " 次 · 套票剩餘 " + (typeof a.sessionsLeft === "number" ? a.sessionsLeft : "—") + " 次 · 卡連結：" + (a.passUrl ? "已加" : "未加");
             left.appendChild(cnt);
             row.appendChild(left);
             var actions = document.createElement("div");
@@ -1181,10 +1198,20 @@
           tick();
         });
 
-        /* CSV 匯入：每行「QR Code,客人姓名」。 */
+        /* CSV 匯入：兩種格式都識。
+           (a) 手寫：每行「QR Code,客人姓名,套票卡下載連結」。
+           (b) Pass2U 票卡管理「匯出」嘅 CSV：欄係 passId,barcode/NFC,field1(美甲套票（已用）),field7(客戶名稱)，
+               格值係 Excel 寫法 ="..."，passId 會自動計出下載連結，已用次數會自動計剩餘。 */
+        function cleanCell(v){
+          var s = String(v || "").trim();
+          if(s.charAt(0) === "=") s = s.slice(1).trim();
+          if(s.length >= 2 && s.charAt(0) === '"' && s.charAt(s.length - 1) === '"') s = s.slice(1, -1);
+          return s.trim();
+        }
         function parseCsv(text){
           var rows = [];
           var lines = String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/);
+          var pass2u = false;
           lines.forEach(function(line){
             if(!line.trim()) return;
             var cells = [];
@@ -1196,11 +1223,24 @@
               cur += ch;
             }
             cells.push(cur);
-            var qr = (cells[0] || "").trim();
-            var name = (cells[1] || "").trim();
-            var passUrl = (cells[2] || "").trim();
-            if(/^(qr|QR|登入|code|編號)/i.test(qr) && !name) return; // 標題行
-            if(qr) rows.push({qr:qr, name:name, passUrl:passUrl});
+            cells = cells.map(cleanCell);
+            var first = (cells[0] || "").toLowerCase();
+            if(/passid|barcode|qr|登入|code|編號/.test(first)){
+              if(/passid|barcode/.test(first)) pass2u = true;
+              return; // 標題行
+            }
+            if(pass2u){
+              var qr = cells[1] || "";
+              var used = parseInt(cells[2] || "0", 10);
+              var name = cells[3] || "";
+              var passId = cells[0] || "";
+              if(qr) rows.push({qr:qr, name:name, passId:passId, used:isNaN(used) ? 0 : used});
+            } else {
+              var qr2 = cells[0] || "";
+              var name2 = cells[1] || "";
+              var passUrl = cells[2] || "";
+              if(qr2) rows.push({qr:qr2, name:name2, passUrl:passUrl});
+            }
           });
           return rows;
         }
@@ -1235,6 +1275,8 @@
           state.remaining = null;
           state.passName = "";
           state.passUrl = "";
+          state.sessionsUsed = null;
+          state.sessionsLeft = null;
           state.adminAsUser = true;
           enterUserMode();
         });
