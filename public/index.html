@@ -646,7 +646,7 @@
   var moreBtn = document.getElementById('loadMoreBtn');
   var doneEl = document.getElementById('worksDone');
   var moreWrap = document.getElementById('worksMore');
-  var BATCH = 20;
+  var BATCH = 28;
   var curFilter = 'all';
   var shownLimit = BATCH;
   var hasMoreNow = false;
@@ -655,37 +655,20 @@
     return (t.getAttribute('data-cat') || '').split(' ').indexOf(curFilter) >= 0;
   }
   function render(){
-    var total = 0;
+    var total = 0, shown = 0;
     tiles.forEach(function(t){
       if(!tileMatches(t)){ t.hidden = true; return; }
       total++;
-      t.hidden = false;
+      if(total <= shownLimit){ t.hidden = false; shown++; }
+      else { t.hidden = true; }
     });
-    hasMoreNow = false;
-    if(moreWrap) moreWrap.hidden = true;
+    hasMoreNow = shown < total;
+    if(moreWrap) moreWrap.hidden = false;
+    if(moreBtn) moreBtn.hidden = !hasMoreNow;
+    if(doneEl) doneEl.hidden = hasMoreNow;
   }
   function loadMore(){ if(!hasMoreNow) return; shownLimit += BATCH; render(); }
-  function maybeLoad(){
-    if(!moreWrap) return;
-    var guard = 0;
-    while(hasMoreNow && guard < 15){
-      var r = moreWrap.getBoundingClientRect();
-      if(r.top < window.innerHeight + 900){ loadMore(); guard++; }
-      else break;
-    }
-  }
-  if(moreBtn) moreBtn.addEventListener('click', function(){ loadMore(); maybeLoad(); });
-  if('IntersectionObserver' in window && moreWrap){
-    var mio = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){ if(e.isIntersecting) maybeLoad(); });
-    }, { rootMargin: '900px' });
-    mio.observe(moreWrap);
-  }
-  var ticking = false;
-  window.addEventListener('scroll', function(){
-    if(ticking) return; ticking = true;
-    requestAnimationFrame(function(){ ticking = false; maybeLoad(); });
-  }, { passive: true });
+  if(moreBtn) moreBtn.addEventListener('click', function(){ loadMore(); });
   btns.forEach(function(b){
     b.addEventListener('click', function(){
       btns.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
@@ -693,7 +676,6 @@
       curFilter = b.getAttribute('data-filter');
       shownLimit = BATCH;
       render();
-      maybeLoad();
     });
   });
   render();
