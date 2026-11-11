@@ -280,6 +280,21 @@
 
       <div id="appArea" hidden>
 
+        <!-- 我的套票卡 -->
+        <section class="card" id="myPassCard" hidden aria-labelledby="passTitle">
+          <div class="step-head">
+            <span class="step-num" aria-hidden="true">♥</span>
+            <h2 id="passTitle">我的套票卡</h2>
+          </div>
+          <p class="hint" id="passInfo"></p>
+          <div id="passQr" style="text-align:center;margin:6px 0 2px"></div>
+          <p class="hint" id="passQrText" style="text-align:center"></p>
+          <div class="btn-row" id="passActions">
+            <a class="btn" id="btnPassDownload" href="#" target="_blank" rel="noopener">重新下載套票卡到銀包</a>
+          </div>
+          <p class="hint" id="passNoLink" hidden>你張卡未連結下載連結，如需重新下載套票卡，請經 WhatsApp 聯絡店主。</p>
+        </section>
+
         <!-- 步驟 1：上傳手相 -->
         <section class="card" aria-labelledby="upTitle">
           <div class="step-head">
@@ -412,6 +427,10 @@
             <span>客人姓名（可唔填，之後用 CSV 補返）</span>
             <input type="text" id="newAcctName" placeholder="例如：阿 May" />
           </label>
+          <label class="field">
+            <span>套票卡下載連結（選填，喺 Pass2U 抄返嗰客嘅卡連結）</span>
+            <input type="text" id="newAcctPassUrl" placeholder="例如：https://www.pass2u.net/…（客人登入後可以喺「我的套票卡」撳入去重新下載）" />
+          </label>
           <div class="btn-row">
             <button class="btn small" id="btnCreateAccount" type="button">開帳戶</button>
           </div>
@@ -422,7 +441,7 @@
           </label>
           <div class="usage-list" id="accountList"></div>
           <p style="font-weight:900;margin:22px 0 4px">CSV 匯入客人姓名</p>
-          <p class="hint">每行「QR Code,客人姓名」：有 QR 就開帳戶或者補名。可以用檔案上傳，或者直接貼上。</p>
+          <p class="hint">每行「QR Code,客人姓名,套票卡下載連結」：有 QR 就開帳戶或者補名，第三欄可唔填。可以用檔案上傳，或者直接貼上。</p>
           <div class="btn-row">
             <button class="btn ghost small" id="btnCsvFile" type="button">揀 CSV 檔案</button>
           </div>
@@ -462,6 +481,7 @@
       </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
     <script>
       (function(){
         "use strict";
@@ -478,6 +498,8 @@
           handURL: null,
           styleName: null,
           styleLink: null,     /* 揀咗作品嘅 IG 連結（有先填） */
+          passName: "",
+          passUrl: "",
           hasOwnRef: false,
           adminToken: null
         };
@@ -562,6 +584,41 @@
           loginCard.hidden = true;
           memberBar.classList.add("show");
           appArea.hidden = false;
+          /* 我的套票卡：用登入 ID（卡上面 QR Code 嗰串號碼）即場畫返個 QR Code；
+             有下載連結就俾客人重新下載去銀包，冇就顯示提示（後備方法）。 */
+          (function renderPassQr(){
+            var box = document.getElementById("passQr");
+            box.innerHTML = "";
+            var text = state.memberId || "";
+            document.getElementById("passQrText").textContent = text ? ("卡號：" + text) : "";
+            if(!text) return;
+            if(window.qrcode){
+              try{
+                var qr = qrcode(0, "M");
+                qr.addData(text);
+                qr.make();
+                box.innerHTML = qr.createImgTag(5, 8);
+                return;
+              }catch(e){}
+            }
+            var img = document.createElement("img");
+            img.src = "https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=" + encodeURIComponent(text);
+            img.alt = "套票卡 QR Code";
+            img.style.cssText = "width:220px;height:220px;max-width:100%";
+            box.appendChild(img);
+          })();
+          var passCard = document.getElementById("myPassCard");
+          if(state.adminAsUser || state.unlimited){
+            passCard.hidden = true;
+          } else {
+            passCard.hidden = false;
+            document.getElementById("passInfo").textContent =
+              (state.passName ? state.passName + " · " : "") + "登入 ID：" + state.memberId;
+            var hasLink = !!state.passUrl;
+            document.getElementById("passActions").style.display = hasLink ? "" : "none";
+            document.getElementById("passNoLink").hidden = hasLink;
+            if(hasLink) document.getElementById("btnPassDownload").href = state.passUrl;
+          }
           refreshQuota();
           memberBar.scrollIntoView({behavior:"smooth", block:"start"});
         }
@@ -591,6 +648,8 @@
                 return;
               }
               state.adminToken = res.token || res.adminToken;
+              state.passName = "";
+              state.passUrl = "";
               loginCard.hidden = true;
               document.getElementById("adminCard").style.display = "";
               adminPanel.hidden = false;
@@ -612,6 +671,8 @@
             state.token = res.token;
             state.unlimited = !!res.unlimited;
             state.remaining = (typeof res.remaining === "number") ? res.remaining : null;
+            state.passName = res.name || "";
+            state.passUrl = res.passUrl || "";
             state.adminAsUser = false;
             enterUserMode();
           });
@@ -625,7 +686,10 @@
           state.adminAsUser = false;
           state.handURL = null;
           state.styleName = null;
+          state.passName = "";
+          state.passUrl = "";
           state.hasOwnRef = false;
+          document.getElementById("myPassCard").hidden = true;
           document.getElementById("loginPw").value = "";
           document.getElementById("handPreviewBox").classList.remove("show");
           document.getElementById("ownRefName").textContent = "";
@@ -991,7 +1055,7 @@
             badge.textContent = STATUS_LABEL[a.status] || a.status;
             left.appendChild(badge);
             var cnt = document.createElement("div"); cnt.className = "ucount";
-            cnt.textContent = "今日已用 " + (a.used || 0) + " 次，仲剩 " + (typeof a.remaining === "number" ? a.remaining : 3) + " 次";
+            cnt.textContent = "今日已用 " + (a.used || 0) + " 次，仲剩 " + (typeof a.remaining === "number" ? a.remaining : 3) + " 次 · 卡連結：" + (a.passUrl ? "已加" : "未加");
             left.appendChild(cnt);
             row.appendChild(left);
             var actions = document.createElement("div");
@@ -1001,11 +1065,16 @@
             nameInput.value = a.name || ""; nameInput.placeholder = "客人姓名";
             nameInput.setAttribute("aria-label", "客人姓名");
             actions.appendChild(nameInput);
+            var passInput = document.createElement("input");
+            passInput.type = "text"; passInput.className = "name-input";
+            passInput.value = a.passUrl || ""; passInput.placeholder = "套票卡下載連結";
+            passInput.setAttribute("aria-label", "套票卡下載連結");
+            actions.appendChild(passInput);
             var saveBtn = document.createElement("button");
-            saveBtn.type = "button"; saveBtn.className = "btn ghost small"; saveBtn.textContent = "儲存個名";
+            saveBtn.type = "button"; saveBtn.className = "btn ghost small"; saveBtn.textContent = "儲存";
             saveBtn.addEventListener("click", function(){
-              api("/api/admin/accounts/update", {method:"POST", admin:true, body:{qr:a.qr, name:nameInput.value.trim()}}).then(function(res){
-                acctMsg.textContent = res.ok ? ("已更新 " + a.qr + " 嘅名。") : (res.error || "儲存失敗。");
+              api("/api/admin/accounts/update", {method:"POST", admin:true, body:{qr:a.qr, name:nameInput.value.trim(), passUrl:passInput.value.trim()}}).then(function(res){
+                acctMsg.textContent = res.ok ? ("已更新 " + a.qr + "。") : (res.error || "儲存失敗。");
                 if(res.ok) loadAdminData();
               });
             });
@@ -1052,12 +1121,14 @@
         document.getElementById("btnCreateAccount").addEventListener("click", function(){
           var qr = document.getElementById("newAcctQr").value.trim();
           var name = document.getElementById("newAcctName").value.trim();
+          var passUrl = document.getElementById("newAcctPassUrl").value.trim();
           if(!qr){ acctMsg.textContent = "請先輸入或者掃描登入 ID（QR Code 內容）。"; return; }
-          api("/api/admin/accounts/create", {method:"POST", admin:true, body:{qr:qr, name:name}}).then(function(res){
+          api("/api/admin/accounts/create", {method:"POST", admin:true, body:{qr:qr, name:name, passUrl:passUrl}}).then(function(res){
             if(!res.ok){ acctMsg.textContent = res.error || "開帳戶失敗。"; return; }
             acctMsg.textContent = res.existed ? ("呢個帳戶已經開咗：" + qr + "。") : ("已開帳戶：" + qr + (name ? "（" + name + "）" : "（未補名）") + "。");
             document.getElementById("newAcctQr").value = "";
             document.getElementById("newAcctName").value = "";
+            document.getElementById("newAcctPassUrl").value = "";
             loadAdminData();
           });
         });
@@ -1127,13 +1198,14 @@
             cells.push(cur);
             var qr = (cells[0] || "").trim();
             var name = (cells[1] || "").trim();
+            var passUrl = (cells[2] || "").trim();
             if(/^(qr|QR|登入|code|編號)/i.test(qr) && !name) return; // 標題行
-            if(qr) rows.push({qr:qr, name:name});
+            if(qr) rows.push({qr:qr, name:name, passUrl:passUrl});
           });
           return rows;
         }
         function importCsvRows(rows){
-          if(rows.length === 0){ csvMsg.textContent = "搵唔到可以匯入嘅行，請檢查格式係每行「QR Code,客人姓名」。"; return; }
+          if(rows.length === 0){ csvMsg.textContent = "搵唔到可以匯入嘅行，請檢查格式係每行「QR Code,客人姓名,套票卡下載連結」。"; return; }
           api("/api/admin/accounts/import", {method:"POST", admin:true, body:{rows:rows}}).then(function(res){
             if(!res.ok){ csvMsg.textContent = res.error || "匯入失敗。"; return; }
             csvMsg.textContent = "匯入完成：新增 " + res.created + " 個帳戶，更新咗 " + res.updated + " 個名，跳過 " + res.skipped + " 行。";
@@ -1161,6 +1233,8 @@
           state.token = null;
           state.unlimited = true;
           state.remaining = null;
+          state.passName = "";
+          state.passUrl = "";
           state.adminAsUser = true;
           enterUserMode();
         });
