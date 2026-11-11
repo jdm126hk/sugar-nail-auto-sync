@@ -1,0 +1,19 @@
+# Token 同本地設定，絕對唔入 git
+.env
+data/token*
+# 例外：token_meta.json 只記「幾時換過 token、幾時到期」，唔含 token 本身，
+# 要 commit 返 repo，等每日 workflow 知道個 token 用咗幾多日、應唔應該續。
+!data/token_meta.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 本地 build 輸出（Cloudflare Pages 部署目錄，唔入 git）
+public/
+
+# macOS / 編輯器
+.DS_Store
+.vscode/

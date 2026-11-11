@@ -1,0 +1,7 @@
+# Cloudflare Pages 設定（免費計劃就夠）
+# 部署：npx wrangler pages deploy public --project-name sugarnail
+# 第一次部署之前，要先喺 Cloudflare Dashboard 開一個 Pages project，
+# 名就係 sugarnail，咁先會攞到 https://sugarnail.pages.dev
+name = "sugarnail"
+pages_build_output_dir = "public"
+compatibility_date = "2026-11-01"
