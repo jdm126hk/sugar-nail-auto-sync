@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light" />
+<title>Sugar Nail — 觀塘一人美甲工作室｜全手繪卡通・3D 粉雕</title>
+<meta name="description" content="Sugar Nail 係觀塘一人美甲工作室，主打可愛卡通全手繪同 3D 粉雕，另有貓眼、鏡面／極光、法式、漸變款式，全部人手畫、人手雕。地址觀塘萬年工業大廈 7 樓，預約制，經 WhatsApp 或 IG DM 預約，歡迎來圖報價。" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Sugar Nail — 觀塘一人美甲工作室" />
+<meta property="og:description" content="觀塘一人美甲工作室，主打全手繪卡通同 3D 粉雕，人手畫、人手雕。預約制，WhatsApp 或 IG DM 預約。" />
+<meta property="og:url" content="https://sugarnail.pages.dev/" />
+<meta property="og:image" content="https://sugarnail.pages.dev/assets/pompom.jpg" />
+<meta property="og:site_name" content="Sugar Nail" />
+<link rel="icon" type="image/png" href="assets/logo-transparent-small.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800&amp;family=Noto+Sans+TC:wght@400;500;700;900&amp;display=swap" rel="stylesheet" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NailSalon",
+  "name": "Sugar Nail",
+  "description": "觀塘一人美甲工作室，主打可愛卡通全手繪同 3D 粉雕，另有貓眼、鏡面／極光、法式、漸變款式，全部人手畫、人手雕。",
+  "url": "https://sugarnail.pages.dev/",
+  "image": "https://sugarnail.pages.dev/assets/pompom.jpg",
+  "telephone": "+85298439868",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "觀塘萬年工業大廈 7 樓",
+    "addressLocality": "觀塘",
+    "addressRegion": "香港",
+    "addressCountry": "HK"
+  },
+  "openingHoursSpecification": {
+    "@type": "OpeningHoursSpecification",
+    "opens": "10:00",
+    "closes": "21:30"
+  },
+  "sameAs": ["https://www.instagram.com/sugar_nail2008/"]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Sugar Nail 點樣預約？",
+      "acceptedAnswer": { "@type": "Answer", "text": "Sugar Nail 係一人美甲工作室，預約制，需要提早預約。可以經 WhatsApp 98439868 或者 Instagram DM（@sugar_nail2008）預約，揀好日子、時間同想做嘅款式，再傳訊息就得。" }
+    },
+    {
+      "@type": "Question",
+      "name": "Sugar Nail 喺邊度？點去？",
+      "acceptedAnswer": { "@type": "Answer", "text": "地址係觀塘萬年工業大廈 7 樓。由 APM 行過去，過馬路就到。" }
+    },
+    {
+      "@type": "Question",
+      "name": "Sugar Nail 營業時間係幾點？",
+      "acceptedAnswer": { "@type": "Answer", "text": "營業時間 10:00–21:30。工作室係預約制，建議先經 WhatsApp 或 IG DM 約好時間先上嚟。" }
+    },
+    {
+      "@type": "Question",
+      "name": "Sugar Nail 有咩款式可以做？",
+      "acceptedAnswer": { "@type": "Answer", "text": "主打可愛卡通全手繪同 3D 粉雕，另有貓眼、鏡面／極光、法式、漸變等款式，全部人手畫、人手雕。網站作品牆有真實作品可以參考。" }
+    },
+    {
+      "@type": "Question",
+      "name": "收費點樣問？",
+      "acceptedAnswer": { "@type": "Answer", "text": "網站唔設收費表，歡迎來圖報價：將想做嘅款式相片經 WhatsApp（98439868）或 IG DM 傳俾我哋，就會回覆收費。" }
+    },
+    {
+      "@type": "Question",
+      "name": "可唔可以俾參考圖照住做？",
+      "acceptedAnswer": { "@type": "Answer", "text": "可以，歡迎來圖。全手繪卡通同 3D 粉雕都係人手畫、人手雕，傳參考圖俾我哋就可以報價同預約。" }
+    }
+  ]
+}
+</script>
+<style>
+  :root{
+    --bg:#FFF9F4; --bg2:#FDF0E7; --card:#FFFFFF; --card2:#FFF3EC;
+    --ink:#4A2E22; --ink2:#7A5A4C; --muted:#9A7B6E;
+    --brown:#6B4232; --brown-deep:#4A2E22;
+    --pink:#F3B7C6; --pink-deep:#C37E6F; --pink-soft:#FDE5E1;
+    --cream:#F7E6D8; --line:#F0DCD2;
+    --logo-bg:#FDE5E1; --logo-brown:#C37E6F;
+    --wa:#25D366; --wa-ink:#0B3D20;
+    --shadow:0 10px 30px rgba(107,66,50,.10);
+    --r-lg:26px; --r-md:18px; --r-sm:12px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC",system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  img{display:block;max-width:100%}
+  a{color:inherit}
+  button,select,input,textarea{font:inherit}
+  button,a.btn{min-height:44px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+  .rounded{font-family:"M PLUS Rounded 1c","Noto Sans TC",sans-serif}
+
+  .site-head{background:var(--bg);border-bottom:1px solid var(--line)}
+  .site-head-in{display:flex;align-items:center;gap:16px;padding-top:10px;padding-bottom:10px}
+  .site-nav{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .site-nav a{text-decoration:none;font-weight:700;font-size:.92rem;color:#6B4232;padding:9px 12px;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;white-space:nowrap}
+  .site-nav a:hover{background:rgba(107,66,50,.08);color:#4A2E22}
+  @media (max-width:520px){.site-nav a{font-size:.85rem;padding:8px 9px}}
+
+  .hero{position:relative;overflow:hidden;background:linear-gradient(160deg,var(--bg2),var(--pink-soft) 55%,var(--bg));border-bottom:1px solid var(--line)}
+  .hero-inner{display:grid;grid-template-columns:1.05fr .95fr;gap:28px;align-items:center;padding:34px 0 40px}
+  @media (max-width:860px){.hero-inner{grid-template-columns:1fr}}
+  .heart{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);color:var(--brown);font-weight:700;font-size:.85rem;padding:7px 14px;border-radius:999px;box-shadow:var(--shadow)}
+  h1{font-family:"M PLUS Rounded 1c","Noto Sans TC",sans-serif;font-weight:800;font-size:clamp(2.4rem,6vw,4rem);line-height:1.08;letter-spacing:.04em;margin:16px 0 4px;color:var(--brown-deep)}
+  h1 .sugar{color:var(--pink-deep)}
+  .hero-logo-h{margin:14px 0 12px;line-height:0}
+  .hero-logo{width:min(470px,94%);height:auto}
+  .hero-sub{font-size:clamp(1.05rem,2.4vw,1.3rem);font-weight:700;color:var(--brown);margin:0 0 10px}
+  .hero p.lead{color:var(--ink2);margin:0 0 18px;max-width:34em}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px;padding:0;list-style:none}
+  .tags li{background:var(--card);border:1.5px dashed var(--pink-deep);color:var(--brown);border-radius:999px;padding:5px 13px;font-size:.88rem;font-weight:700}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px}
+  .btn{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-weight:800;border-radius:999px;padding:12px 22px;border:1px solid transparent;cursor:pointer;transition:transform .15s ease, box-shadow .15s ease}
+  .btn:active{transform:scale(.98)}
+  .btn-wa{background:var(--wa);color:var(--wa-ink)}
+  .btn-ig{background:var(--brown-deep);color:#FFF6F0}
+  .btn-ghost{background:var(--card);color:var(--brown);border-color:var(--line)}
+  .hero-note{font-size:.85rem;color:var(--muted);margin-top:12px}
+  .hero-photo{position:relative;display:block;text-decoration:none}
+  .hero-photo img{width:100%;aspect-ratio:3/3.4;object-fit:cover;object-position:center 38%;border-radius:34px 34px 34px 8px;box-shadow:var(--shadow);border:6px solid var(--card)}
+  .hero-badge{position:absolute;left:-8px;bottom:18px;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:10px 16px;max-width:88%}
+  .hero-badge b{display:block;font-size:1rem;color:var(--brown-deep)}
+  .hero-badge span{font-size:.82rem;color:var(--muted);display:block;line-height:1.5}
+  .hero-src{font-size:.78rem;color:var(--muted);margin-top:10px;text-align:right}
+  .hero-src a{color:var(--pink-deep);font-weight:700}
+
+  section{padding:52px 0}
+  .sec-head{margin-bottom:22px}
+  .sec-head h2{font-family:"M PLUS Rounded 1c","Noto Sans TC",sans-serif;font-size:clamp(1.55rem,3.6vw,2.1rem);margin:0 0 6px;color:var(--brown-deep)}
+  .sec-head p{color:var(--ink2);margin:0;max-width:44em}
+  .alt{background:var(--bg2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+
+  .intro-sec{padding:44px 0 10px}
+  .intro-sec h2{font-family:"M PLUS Rounded 1c","Noto Sans TC",sans-serif;font-size:clamp(1.35rem,3vw,1.8rem);margin:0 0 14px;color:var(--brown-deep);letter-spacing:.02em}
+  .intro-lead{color:var(--ink);margin:0 0 20px;max-width:56em;font-size:1.08rem;line-height:1.9;letter-spacing:.01em}
+  .intro-points{list-style:none;margin:0;padding:0;display:grid;gap:12px;max-width:56em}
+  .intro-points li{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 18px;box-shadow:var(--shadow)}
+  .intro-points .ip-label{flex:none;min-width:4.2em;text-align:center;background:var(--pink-soft);color:var(--brown);font-weight:800;border-radius:999px;padding:4px 10px;font-size:.9rem}
+  .intro-points p{margin:0;color:var(--ink2);line-height:1.85}
+  .intro-points p b{color:var(--ink)}
+  @media (max-width:520px){.intro-points li{flex-direction:column;gap:8px}.intro-points .ip-label{align-self:flex-start}}
+
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .filters button{border:1.5px solid var(--line);background:var(--card);color:var(--brown);border-radius:999px;padding:9px 18px;font-weight:700;cursor:pointer;min-height:44px}
+  .filters button[aria-pressed="true"]{background:var(--brown-deep);color:#FFF6F0;border-color:var(--brown-deep)}
+  .works-note{font-size:.88rem;color:var(--muted);margin:0 0 8px}
+  .p-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+  .p-tile{position:relative;display:block;border-radius:14px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:1/1;background:var(--card2)}
+  .p-tile[hidden]{display:none}
+  .p-tile img{width:100%;height:100%;object-fit:cover}
+  .p-cat{position:absolute;left:8px;bottom:8px;background:#4A2E22;color:#FFF6F0;font-size:.75rem;font-weight:800;padding:4px 10px;border-radius:999px}
+  .works-more{margin-top:18px;text-align:center}
+  .works-done{color:var(--muted);font-size:.9rem;margin:6px 0 0}
+  @media (max-width:860px){.p-grid{grid-template-columns:repeat(3,1fr)}}
+  @media (max-width:520px){.p-grid{grid-template-columns:repeat(2,1fr)}}
+  .ig-strip{margin-top:20px;background:var(--card);border:1px dashed var(--pink-deep);border-radius:var(--r-md);padding:16px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+  .ig-strip p{margin:0;color:var(--ink2);font-size:.93rem}
+  .ig-strip a{font-weight:800;color:var(--pink-deep)}
+
+  .svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media (max-width:860px){.svc-grid{grid-template-columns:1fr}}
+  .svc{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;box-shadow:var(--shadow)}
+  .svc h3{margin:0 0 8px;color:var(--brown-deep);font-size:1.15rem}
+  .svc p{margin:0 0 12px;color:var(--ink2)}
+  .svc .ask{font-weight:800;color:var(--pink-deep)}
+  .svc .ask a{color:var(--pink-deep)}
+
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+  @media (max-width:860px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;box-shadow:var(--shadow)}
+  .step b{display:block;font-size:1.05rem;color:var(--brown-deep);margin-bottom:6px}
+  .step p{margin:0;color:var(--ink2)}
+  .book-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow)}
+  .book-card h3{margin:0 0 6px;color:var(--brown-deep);font-size:1.3rem}
+  .book-card>p{margin:0 0 18px;color:var(--ink2)}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-weight:700;color:var(--brown);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:11px 13px;background:#fff;color:var(--ink)}
+  .field textarea{min-height:84px;resize:vertical}
+  .msg-out{white-space:pre-wrap;background:var(--card2);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 16px;color:var(--ink2);margin:18px 0 12px}
+  .copy-ok{color:var(--ink2);font-size:.9rem;margin:10px 0 0;min-height:1.4em}
+  .book-actions{display:flex;flex-wrap:wrap;gap:10px}
+
+  .contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+  @media (max-width:860px){.contact-grid{grid-template-columns:1fr}}
+  .contact-card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;box-shadow:var(--shadow)}
+  .contact-card dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 14px}
+  .contact-card dt{font-weight:800;color:var(--brown)}
+  .contact-card dd{margin:0;color:var(--ink2)}
+  .contact-card a{color:var(--pink-deep);font-weight:700}
+  .map-wrap{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow)}
+  .map-wrap iframe{width:100%;height:320px;border:0;display:block}
+  .route-note{margin-top:14px;background:var(--card);border:1px dashed var(--pink-deep);border-radius:var(--r-md);padding:14px 16px;color:var(--ink2)}
+  .route-note b{color:var(--brown-deep)}
+
+  .faq details{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .faq summary{font-weight:800;color:var(--brown-deep);cursor:pointer}
+  .faq p{margin:10px 0 0;color:var(--ink2)}
+
+  footer{background:var(--brown-deep);color:#FFF6F0;padding:36px 0;margin-top:0}
+  footer a{color:#F3B7C6}
+  .foot-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:20px}
+  @media (max-width:860px){.foot-grid{grid-template-columns:1fr}}
+  footer h3{margin:0 0 8px}
+  footer p{margin:0 0 6px;color:#E8D5CC}
+  .to-top{position:fixed;right:18px;bottom:18px;z-index:50;background:var(--brown-deep);color:#FFF6F0;border:0;border-radius:999px;padding:11px 18px;font-weight:800;cursor:pointer;box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .to-top.show{opacity:1;pointer-events:auto}
+</style>
+</head>
+<body>
+
+<div class="site-head">
+  <div class="wrap site-head-in">
+    <nav class="site-nav" aria-label="主要導覽">
+      <a href="#works">作品</a><a href="#services">服務</a><a href="#booking">預約</a><a href="#contact">聯絡</a><a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG @sugar_nail2008</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div>
+      <span class="heart">♥ 觀塘美甲 ・ 預約制</span>
+      <h1><span class="sugar">Sugar</span> Nail</h1>
+      <div class="hero-logo-h"><img class="hero-logo" src="assets/logo-transparent.png" alt="Sugar Nail — Nail Carving Art" width="470" height="149" /></div>
+      <p class="hero-sub">甜甜的指尖，畫出你鍾意嘅公仔 ♥</p>
+      <p class="lead">Sugar Nail 專做可愛卡通全手繪同 3D 粉雕，亦有貓眼、鏡面等流行款式。每一隻公仔、每一粒立體蝴蝶結都係人手畫、人手雕，唔係貼紙。</p>
+      <ul class="tags">
+        <li>全手繪卡通</li><li>3D 粉雕</li><li>貓眼</li><li>鏡面 / 極光</li><li>法式・漸變</li>
+      </ul>
+      <div class="cta-row">
+        <a class="btn btn-wa" href="https://wa.me/85298439868" target="_blank" rel="noopener">WhatsApp 預約</a>
+        <a class="btn btn-ig" href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG DM 預約</a>
+        <a class="btn btn-ghost" href="#works">睇作品</a>
+      </div>
+      <p class="hero-note">預約只經 WhatsApp 及 IG DM</p>
+    </div>
+    <div>
+      <a class="hero-photo" href="https://www.instagram.com/p/Dd8xuoSvhGT/" target="_blank" rel="noopener">
+        <img src="assets/pompom.jpg" alt="Sugar Nail 招牌作品：布甸狗 3D 粉雕" />
+        <span class="hero-badge"><b>招牌作品：布甸狗 3D 粉雕</b><span>本店真實作品 ・ 點圖去 IG 原 Post 睇 →</span></span>
+      </a>
+      <p class="hero-src">相片來源：<a href="https://www.instagram.com/p/Dd8xuoSvhGT/" target="_blank" rel="noopener">IG 原 Post @sugar_nail2008</a></p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="intro-sec">
+    <div class="wrap">
+      <h2>Sugar Nail — 觀塘一人美甲工作室</h2>
+      <p class="intro-lead">Sugar Nail 係一間一人美甲工作室。</p>
+      <ul class="intro-points">
+        <li><span class="ip-label">位置</span><p>位於<b>觀塘萬年工業大廈 7 樓</b>，由 APM 行過去、過馬路就到。</p></li>
+        <li><span class="ip-label">主打</span><p>主打<b>可愛卡通全手繪</b>同 <b>3D 粉雕</b>，亦有貓眼、鏡面／極光、法式同漸變款式，全部人手畫、人手雕，唔係貼紙。</p></li>
+        <li><span class="ip-label">時間</span><p>營業時間 <b>10:00–21:30</b>，預約制，需要提早預約。</p></li>
+        <li><span class="ip-label">預約</span><p>預約同查詢經 <b>WhatsApp 98439868</b> 或 IG DM <b>@sugar_nail2008</b>，歡迎來圖報價。</p></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="works">
+    <div class="wrap">
+      <div class="sec-head"><h2>作品</h2></div>
+      <div class="filters" role="group" aria-label="按類型篩選作品">
+        <button type="button" data-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-filter="hand" aria-pressed="false">全手繪卡通</button>
+        <button type="button" data-filter="3d" aria-pressed="false">3D 粉雕</button>
+        <button type="button" data-filter="cat" aria-pressed="false">貓眼</button>
+        <button type="button" data-filter="mirror" aria-pressed="false">鏡面</button>
+        <button type="button" data-filter="other" aria-pressed="false">簡約／其他</button>
+      </div>
+      <p class="works-note">有啲款係雙屬性（例如有一款同時係鏡面＋貓眼），撳任何一個相關分類都搵到。部分作品嘅款式未逐一核實，統一歸入「簡約／其他」。</p>
+      <div class="p-grid" id="worksGrid">
+<!--GALLERY-->
+      </div>
+      <div class="works-more" id="worksMore">
+        <button type="button" class="btn btn-ghost" id="loadMoreBtn">顯示更多作品</button>
+        <p class="works-done" id="worksDone" hidden>已顯示晒</p>
+      </div>
+      <div class="ig-strip">
+        <p>鍾意邊款，cap 圖 DM 我哋問就得；想去 IG 主頁慢慢揀都得。</p>
+        <a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">@sugar_nail2008 →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="services" class="alt">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>服務項目</h2>
+        <p>呢度只介紹款式同風格，唔顯示收費。想知收費，請直接 WhatsApp 或 IG DM 查詢。</p>
+      </div>
+      <div class="svc-grid">
+        <article class="svc">
+          <h3>✎ 全手繪卡通</h3>
+          <p>Sugar Nail 招牌服務。卡通角色、動漫人物、寵物肖像逐筆人手繪畫，可帶圖訂製，複雜圖案建議預約時先傳圖確認。</p>
+          <p class="ask">查詢：<a href="https://wa.me/85298439868" target="_blank" rel="noopener">歡迎查詢（WhatsApp）</a> ・ <a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">歡迎來圖報價（IG DM）</a></p>
+        </article>
+        <article class="svc">
+          <h3>❀ 3D 粉雕 / 立體款</h3>
+          <p>立體蝴蝶結、花朵、珍珠同粉雕造型，人手雕製。可配法式、漸變底色，做甜美感重嘅款式最啱。</p>
+          <p class="ask">查詢：<a href="https://wa.me/85298439868" target="_blank" rel="noopener">歡迎查詢（WhatsApp）</a> ・ <a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">歡迎來圖報價（IG DM）</a></p>
+        </article>
+        <article class="svc">
+          <h3>◐ 貓眼 Gel</h3>
+          <p>磁吸貓眼膠，甲面有一道會隨角度郁動嘅光帶。粉紅、玫瑰粉等柔和色系最受歡迎，返工款都 carry 到。</p>
+          <p class="ask">查詢：<a href="https://wa.me/85298439868" target="_blank" rel="noopener">歡迎查詢（WhatsApp）</a> ・ <a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">歡迎來圖報價（IG DM）</a></p>
+        </article>
+        <article class="svc">
+          <h3>✦ 鏡面 / 極光</h3>
+          <p>鏡面粉或極光粉做出反光幻彩效果，裸粉鏡面低調高級，極光閃粉就夢幻啲，可同貓眼疊做。</p>
+          <p class="ask">查詢：<a href="https://wa.me/85298439868" target="_blank" rel="noopener">歡迎查詢（WhatsApp）</a> ・ <a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">歡迎來圖報價（IG DM）</a></p>
+        </article>
+      </div>
+      <p style="color:var(--ink2);margin-top:16px">所有收費都包延長、拆甲、前置剪皮（特別延長另外）。</p>
+    </div>
+  </section>
+
+  <section id="booking">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>預約</h2>
+        <p>預約只用兩個渠道：WhatsApp 同 IG DM。喺下面寫低你想約嘅日子同款式，撳 WhatsApp 掣就會直接帶住成段訊息去 WhatsApp，按傳送就得，唔使複製貼上；用 IG DM 就先複製段訊息，再貼去 IG 傳俾我哋。</p>
+      </div>
+      <div class="steps">
+        <div class="step"><b>1．揀款</b><p>喺上面作品格或者 IG 睇款，cap 低鍾意嘅相，全手繪款記得準備埋參考圖。</p></div>
+        <div class="step"><b>2．寫低想約咩</b><p>喺下面填返你個名、想約嘅日子、時間同款式，幫你寫好一段訊息，照住傳就得。</p></div>
+        <div class="step"><b>3．傳去 WhatsApp / IG DM</b><p>撳「用 WhatsApp 傳送」，段訊息會自動入好 WhatsApp 98439868，按傳送就得；或者複製訊息貼去 IG DM。等我哋覆實時間。一人工作室，需要提早預約。</p></div>
+      </div>
+      <div class="book-card">
+        <h3>預約</h3>
+        <p>寫低你想約嘅日子同想做嘅款，幫你整理好一段訊息。撳綠色掣會直接去 WhatsApp，訊息已經入好，㩒傳送就得；想用 IG DM 就撳「複製訊息」，貼去 IG 傳俾我哋。</p>
+        <div class="field"><label for="f-name">點稱呼你？</label><input id="f-name" type="text" autocomplete="name" placeholder="例如：阿欣" /></div>
+        <div class="field"><label for="f-date">想約邊日？</label><input id="f-date" type="date" /></div>
+        <div class="field"><label for="f-time">大約咩時間？</label>
+          <select id="f-time">
+            <option value="">請選擇</option>
+            <option>上午</option><option>下午</option><option>傍晚</option><option>夜晚</option>
+          </select>
+        </div>
+        <div class="field"><label for="f-svc">想做邊款？</label>
+          <select id="f-svc">
+            <option>全手繪卡通</option><option>3D 粉雕 / 立體款</option><option>貓眼 Gel</option><option>鏡面 / 極光</option><option>未決定，想問意見</option>
+          </select>
+        </div>
+        <div class="field"><label for="f-note">補充（可留空）</label><textarea id="f-note" placeholder="例如：想做布甸狗、短甲、裸粉底"></textarea></div>
+        <div class="msg-out" id="msgOut"></div>
+        <div class="book-actions">
+          <a class="btn btn-wa" id="waSendBtn" href="https://wa.me/85298439868" target="_blank" rel="noopener">用 WhatsApp 傳送</a>
+          <button type="button" class="btn btn-ghost" id="copyBtn">複製訊息（IG DM 用）</button>
+          <a class="btn btn-ig" href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">去 IG DM 傳送</a>
+        </div>
+        <p class="copy-ok" id="copyOk"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="alt">
+    <div class="wrap">
+      <div class="sec-head"><h2>聯絡同位置</h2></div>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <dl>
+            <dt>地址</dt><dd>觀塘萬年工業大廈 7 樓（由 APM 行過去，過馬路就到）</dd>
+            <dt>營業時間</dt><dd>10:00–21:30（預約制，請提早預約）</dd>
+            <dt>電話</dt><dd><a href="tel:+85298439868">98439868</a></dd>
+            <dt>WhatsApp</dt><dd><a href="https://wa.me/85298439868" target="_blank" rel="noopener">wa.me/85298439868</a></dd>
+            <dt>Instagram</dt><dd><a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">@sugar_nail2008</a></dd>
+          </dl>
+        </div>
+        <div>
+          <div class="map-wrap">
+            <iframe title="Sugar Nail 地圖：觀塘萬年工業大廈" src="https://www.google.com/maps?q=%E8%A7%80%E5%A1%98%E8%90%AC%E5%B9%B4%E5%B7%A5%E6%A5%AD%E5%A4%A7%E5%BB%88&amp;output=embed" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+          </div>
+          <div class="route-note"><b>由 APM 點行：</b>由 APM 行過去，過馬路就到觀塘萬年工業大廈 7 樓。路線相片稍後補上。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="sec-head"><h2>常見問題</h2></div>
+      <div class="faq">
+        <details><summary>Sugar Nail 點樣預約？</summary><p>Sugar Nail 係一人美甲工作室，預約制，需要提早預約。可以經 WhatsApp 98439868 或者 Instagram DM（@sugar_nail2008）預約，揀好日子、時間同想做嘅款式，再傳訊息就得。</p></details>
+        <details><summary>Sugar Nail 喺邊度？點去？</summary><p>地址係觀塘萬年工業大廈 7 樓。由 APM 行過去，過馬路就到。</p></details>
+        <details><summary>Sugar Nail 營業時間係幾點？</summary><p>營業時間 10:00–21:30。工作室係預約制，建議先經 WhatsApp 或 IG DM 約好時間先上嚟。</p></details>
+        <details><summary>Sugar Nail 有咩款式可以做？</summary><p>主打可愛卡通全手繪同 3D 粉雕，另有貓眼、鏡面／極光、法式、漸變等款式，全部人手畫、人手雕。上面作品牆有真實作品可以參考。</p></details>
+        <details><summary>收費點樣問？</summary><p>網站唔設收費表，歡迎來圖報價：將想做嘅款式相片經 WhatsApp（98439868）或 IG DM 傳俾我哋，就會回覆收費。</p></details>
+        <details><summary>可唔可以俾參考圖照住做？</summary><p>可以，歡迎來圖。全手繪卡通同 3D 粉雕都係人手畫、人手雕，傳參考圖俾我哋就可以報價同預約。</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div>
+      <h3>Sugar Nail ♥</h3>
+      <p>觀塘美甲 ・ 全手繪卡通 ・ 3D 粉雕 ・ 貓眼 ・ 鏡面</p>
+      <p>預約制，只接受 WhatsApp 及 IG DM 預約。</p>
+    </div>
+    <div>
+      <p>聯絡</p>
+      <p>Instagram：<a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">@sugar_nail2008</a></p>
+      <p>WhatsApp：<a href="https://wa.me/85298439868" target="_blank" rel="noopener">98439868</a></p>
+      <p>電話：<a href="tel:+85298439868">98439868</a></p>
+      <p>地址：觀塘萬年工業大廈 7 樓（由 APM 行過去，過馬路就到）</p>
+      <p>營業時間：10:00–21:30</p>
+    </div>
+  </div>
+  <div class="wrap"><p style="margin-top:18px">網站唔會放收費表，收費一律經 WhatsApp / IG DM 查詢，歡迎來圖報價。</p></div>
+</footer>
+
+<button type="button" class="to-top" id="toTop">返頂部 ↑</button>
+
+<script>
+(function(){
+  var tiles = Array.prototype.slice.call(document.querySelectorAll('.p-tile'));
+  var btns = document.querySelectorAll('.filters button');
+  var moreBtn = document.getElementById('loadMoreBtn');
+  var doneEl = document.getElementById('worksDone');
+  var moreWrap = document.getElementById('worksMore');
+  var BATCH = 20;
+  var curFilter = 'all';
+  var shownLimit = BATCH;
+  var hasMoreNow = false;
+  function tileMatches(t){
+    if(curFilter === 'all') return true;
+    return (t.getAttribute('data-cat') || '').split(' ').indexOf(curFilter) >= 0;
+  }
+  function render(){
+    var total = 0, shown = 0;
+    tiles.forEach(function(t){
+      if(!tileMatches(t)){ t.hidden = true; return; }
+      total++;
+      if(total <= shownLimit){ t.hidden = false; shown++; }
+      else { t.hidden = true; }
+    });
+    hasMoreNow = shown < total;
+    if(moreBtn) moreBtn.hidden = !hasMoreNow;
+    if(doneEl) doneEl.hidden = hasMoreNow;
+  }
+  function loadMore(){ if(!hasMoreNow) return; shownLimit += BATCH; render(); }
+  function maybeLoad(){
+    if(!moreWrap) return;
+    var guard = 0;
+    while(hasMoreNow && guard < 15){
+      var r = moreWrap.getBoundingClientRect();
+      if(r.top < window.innerHeight + 900){ loadMore(); guard++; }
+      else break;
+    }
+  }
+  if(moreBtn) moreBtn.addEventListener('click', function(){ loadMore(); maybeLoad(); });
+  if('IntersectionObserver' in window && moreWrap){
+    var mio = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if(e.isIntersecting) maybeLoad(); });
+    }, { rootMargin: '900px' });
+    mio.observe(moreWrap);
+  }
+  var ticking = false;
+  window.addEventListener('scroll', function(){
+    if(ticking) return; ticking = true;
+    requestAnimationFrame(function(){ ticking = false; maybeLoad(); });
+  }, { passive: true });
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      btns.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      b.setAttribute('aria-pressed','true');
+      curFilter = b.getAttribute('data-filter');
+      shownLimit = BATCH;
+      render();
+      maybeLoad();
+    });
+  });
+  render();
+
+  var fields = ['f-name','f-date','f-time','f-svc','f-note'].map(function(id){ return document.getElementById(id); });
+  var out = document.getElementById('msgOut');
+  var waSendBtn = document.getElementById('waSendBtn');
+  function build(){
+    var name = fields[0].value.trim(),
+        date = fields[1].value,
+        time = fields[2].value,
+        svc  = fields[3].value,
+        note = fields[4].value.trim();
+    var lines = ['你好 Sugar Nail ♥ 我想預約做甲：'];
+    if(name) lines.push('稱呼：' + name);
+    if(date) lines.push('想約：' + date);
+    if(time) lines.push('時間：' + time);
+    lines.push('想做：' + svc);
+    if(note) lines.push('補充：' + note);
+    lines.push('唔該晒！');
+    var text = lines.join('\n');
+    out.textContent = text;
+    if(waSendBtn) waSendBtn.href = 'https://wa.me/85298439868?text=' + encodeURIComponent(text);
+    return text;
+  }
+  fields.forEach(function(f){ f.addEventListener('input', build); f.addEventListener('change', build); });
+  build();
+
+  var ok = document.getElementById('copyOk');
+  document.getElementById('copyBtn').addEventListener('click', function(){
+    var text = build();
+    function done(){ ok.textContent = '已複製，而家貼去 IG DM 就得；用 WhatsApp 就直接撳上面綠色掣，唔使貼。'; }
+    function fail(){
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(out);
+        var sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(range);
+      } catch(e){}
+      ok.textContent = '自動複製唔到，上面段訊息已經幫你揀好，長按佢再撳「複製」就得。';
+    }
+    function legacyCopy(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('autocomplete','off'); ta.setAttribute('autocorrect','off');
+      ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.left = '0';
+      ta.style.width = '2em'; ta.style.height = '2em'; ta.style.padding = '0';
+      ta.style.border = 'none'; ta.style.outline = 'none'; ta.style.boxShadow = 'none';
+      ta.style.background = 'transparent'; ta.style.opacity = '0.01';
+      ta.style.fontSize = '16px';
+      document.body.appendChild(ta);
+      var copied = false;
+      try {
+        ta.focus();
+        ta.setSelectionRange(0, text.length);
+        copied = document.execCommand('copy') === true;
+      } catch(e){ copied = false; }
+      document.body.removeChild(ta);
+      if(copied){ done(); return; }
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(out);
+        var sel = window.getSelection();
+        sel.removeAllRanges(); sel.addRange(range);
+        if(document.execCommand('copy') === true){ done(); return; }
+      } catch(e){}
+      fail();
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      var settled = false;
+      var timer = setTimeout(function(){ if(!settled){ settled = true; legacyCopy(); } }, 1200);
+      navigator.clipboard.writeText(text).then(function(){
+        if(settled) return; settled = true; clearTimeout(timer); done();
+      }, function(){
+        if(settled) return; settled = true; clearTimeout(timer); legacyCopy();
+      });
+    } else { legacyCopy(); }
+  });
+
+  var toTop = document.getElementById('toTop');
+  if(toTop){
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function onScroll(){
+      var show = (window.scrollY || document.documentElement.scrollTop) > 500;
+      toTop.classList.toggle('show', show);
+      toTop.setAttribute('aria-hidden', show ? 'false' : 'true');
+      toTop.tabIndex = show ? 0 : -1;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    toTop.addEventListener('click', function(){
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+  }
+})();
+</script>
+</body>
+</html>
