@@ -112,6 +112,46 @@ function bearerToken(request) {
   return m ? m[1].trim() : null;
 }
 
+// ---------------- 帳戶（店主管理） ----------------
+// 帳戶記錄放喺 KV：key `acct:<qr>`，內容 {qr, name, status, createdAt, updatedAt}。
+// status：active（正常）／disabled（停用）／void（已作廢）。
+// 未登記嘅 QR 照樣登入到（沿用共用密碼制）；有記錄而狀態唔係 active 先會擋登入。
+const ACCOUNT_STATUSES = ["active", "disabled", "void"];
+
+function acctKey(qr) {
+  return `acct:${qr}`;
+}
+
+async function getAccount(env, qr) {
+  const raw = await env.TRYON_KV.get(acctKey(qr));
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+async function putAccount(env, account) {
+  await env.TRYON_KV.put(acctKey(account.qr), JSON.stringify(account));
+}
+
+async function listAccounts(env) {
+  const list = await env.TRYON_KV.list({ prefix: "acct:" });
+  const rows = [];
+  for (const item of list.keys) {
+    const raw = await env.TRYON_KV.get(item.name);
+    if (!raw) continue;
+    try {
+      rows.push(JSON.parse(raw));
+    } catch {
+      // 壞記錄跳過
+    }
+  }
+  rows.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return rows;
+}
+
 async function getUsed(env, date, qr) {
   const raw = await env.TRYON_KV.get(`quota:${date}:${qr}`);
   const n = raw === null ? 0 : parseInt(raw, 10);
@@ -178,6 +218,15 @@ async function handleLogin(request, env) {
     return json({ ok: false, error: "密碼唔啱" }, 401);
   }
   await clearFailedLogins(env, ip);
+
+  // 有帳戶記錄而狀態唔係正常：停用／作廢都唔俾登入。
+  const account = unlimited ? null : await getAccount(env, qr);
+  if (account && account.status === "disabled") {
+    return json({ ok: false, error: "呢個帳戶已停用，請聯絡店主" }, 403);
+  }
+  if (account && account.status === "void") {
+    return json({ ok: false, error: "呢個帳戶已作廢，請聯絡店主" }, 403);
+  }
 
   const token = await createSession(env, {
     qr,
@@ -285,8 +334,10 @@ async function handleAdminUsage(request, env) {
   for (const item of list.keys) {
     const qr = item.name.slice(prefix.length);
     const used = await getUsed(env, date, qr);
+    const account = await getAccount(env, qr);
     rows.push({
       qr,
+      name: account?.name || "",
       used,
       remaining: Math.max(0, DAILY_LIMIT - used),
     });
@@ -320,13 +371,132 @@ async function handleAdminRequests(request, env) {
     const raw = await env.TRYON_KV.get(item.name);
     if (!raw) continue;
     try {
-      rows.push(JSON.parse(raw));
+      const rec = JSON.parse(raw);
+      const account = await getAccount(env, rec.qr);
+      rec.name = account?.name || "";
+      rows.push(rec);
     } catch {
       // 壞記錄跳過
     }
   }
   rows.sort((a, b) => b.ts - a.ts);
   return json({ ok: true, date, requests: rows.slice(0, 100) });
+}
+
+// ---------------- 帳戶管理（店主） ----------------
+
+async function handleAdminAccountsList(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const date = hkDate();
+  const accounts = await listAccounts(env);
+  const rows = [];
+  for (const a of accounts) {
+    const used = await getUsed(env, date, a.qr);
+    rows.push({
+      qr: a.qr,
+      name: a.name || "",
+      status: a.status || "active",
+      createdAt: a.createdAt || 0,
+      used,
+      remaining: Math.max(0, DAILY_LIMIT - used),
+    });
+  }
+  return json({ ok: true, accounts: rows });
+}
+
+async function handleAdminAccountsCreate(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const body = await readJson(request);
+  const qr = normaliseQr(body?.qr);
+  if (!qr) {
+    return json({ ok: false, error: "請提供登入 ID（QR Code 內容）" }, 400);
+  }
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const existing = await getAccount(env, qr);
+  if (existing) {
+    return json({ ok: true, account: existing, existed: true });
+  }
+  const now = Date.now();
+  const account = { qr, name, status: "active", createdAt: now, updatedAt: now };
+  await putAccount(env, account);
+  return json({ ok: true, account, existed: false });
+}
+
+async function handleAdminAccountsUpdate(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const body = await readJson(request);
+  const qr = normaliseQr(body?.qr);
+  if (!qr) {
+    return json({ ok: false, error: "請提供登入 ID（QR Code 內容）" }, 400);
+  }
+  const account = await getAccount(env, qr);
+  if (!account) {
+    return json({ ok: false, error: "搵唔到呢個帳戶" }, 404);
+  }
+  if (typeof body?.name === "string") account.name = body.name.trim();
+  if (typeof body?.status === "string") {
+    if (!ACCOUNT_STATUSES.includes(body.status)) {
+      return json({ ok: false, error: "狀態唔啱" }, 400);
+    }
+    account.status = body.status;
+  }
+  account.updatedAt = Date.now();
+  await putAccount(env, account);
+  return json({ ok: true, account });
+}
+
+async function handleAdminAccountsDelete(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const body = await readJson(request);
+  const qr = normaliseQr(body?.qr);
+  if (!qr) {
+    return json({ ok: false, error: "請提供登入 ID（QR Code 內容）" }, 400);
+  }
+  await env.TRYON_KV.delete(acctKey(qr));
+  return json({ ok: true, qr });
+}
+
+async function handleAdminAccountsImport(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const body = await readJson(request);
+  const rows = Array.isArray(body?.rows) ? body.rows.slice(0, 500) : [];
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
+  for (const row of rows) {
+    const qr = normaliseQr(row?.qr);
+    const name = typeof row?.name === "string" ? row.name.trim() : "";
+    if (!qr) {
+      skipped++;
+      continue;
+    }
+    const existing = await getAccount(env, qr);
+    const now = Date.now();
+    if (existing) {
+      if (name) {
+        existing.name = name;
+        existing.updatedAt = now;
+        await putAccount(env, existing);
+        updated++;
+      } else {
+        skipped++;
+      }
+    } else {
+      await putAccount(env, { qr, name, status: "active", createdAt: now, updatedAt: now });
+      created++;
+    }
+  }
+  return json({ ok: true, created, updated, skipped });
 }
 
 // ---------------- 路由 ----------------
@@ -363,6 +533,21 @@ export default {
     }
     if (path === "/api/admin/requests" && request.method === "GET") {
       return handleAdminRequests(request, env);
+    }
+    if (path === "/api/admin/accounts" && request.method === "GET") {
+      return handleAdminAccountsList(request, env);
+    }
+    if (path === "/api/admin/accounts/create" && request.method === "POST") {
+      return handleAdminAccountsCreate(request, env);
+    }
+    if (path === "/api/admin/accounts/update" && request.method === "POST") {
+      return handleAdminAccountsUpdate(request, env);
+    }
+    if (path === "/api/admin/accounts/delete" && request.method === "POST") {
+      return handleAdminAccountsDelete(request, env);
+    }
+    if (path === "/api/admin/accounts/import" && request.method === "POST") {
+      return handleAdminAccountsImport(request, env);
     }
 
     return json({ ok: false, error: "not found" }, 404);
