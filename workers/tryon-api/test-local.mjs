@@ -283,6 +283,29 @@ console.log("== 帳戶管理 ==");
   const pl2 = await call("/api/admin/accounts", { method: "GET", token: adminToken });
   const pr2 = pl2.data?.accounts?.find((x) => x.qr === "pass002");
   check("帳戶名單見到 CSV 匯入嘅卡連結", pr2?.passUrl === "https://www.pass2u.net/d/csv-link");
+  // Pass2U 匯出同步：passId 自動計下載連結，已用次數計剩餘
+  const ps = await call("/api/admin/accounts/import", {
+    body: { rows: [
+      { qr: "45391582", name: "Yan", passId: "WR4eaAvuSLsW", used: 0 },
+      { qr: "39515934", name: "Canise Lui", passId: "Wncsz07-rJuq", used: 2 },
+    ] },
+    token: adminToken,
+  });
+  check("Pass2U 格式匯入新增 2 個帳戶", ps.status === 200 && ps.data?.created === 2);
+  const pl3 = await call("/api/login", {
+    body: { qr: "39515934", password: "test-guest-password" },
+  });
+  check("登入回覆有套票剩餘次數（6−2=4）", pl3.status === 200 && pl3.data?.sessionsUsed === 2 && pl3.data?.sessionsLeft === 4);
+  check("登入回覆有 Pass2U 下載連結", pl3.data?.passUrl === "https://www.pass2u.net/d/Wncsz07-rJuq?t=qr_code&openExternalBrowser=1");
+  const ps2 = await call("/api/admin/accounts/import", {
+    body: { rows: [{ qr: "39515934", name: "Canise Lui", passId: "Wncsz07-rJuq", used: 3 }] },
+    token: adminToken,
+  });
+  check("再匯入同一張卡會更新已用次數", ps2.status === 200 && ps2.data?.updated === 1);
+  const pl4 = await call("/api/login", {
+    body: { qr: "39515934", password: "test-guest-password" },
+  });
+  check("更新後剩餘次數變返 3", pl4.data?.sessionsLeft === 3);
   // 無 token 唔俾開帳戶
   const noAuth = await call("/api/admin/accounts/create", {
     body: { qr: "cust999", name: "唔應該入到" },
