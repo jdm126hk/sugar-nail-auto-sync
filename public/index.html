@@ -167,6 +167,15 @@
   .ig-strip p{margin:0;color:var(--ink2);font-size:.93rem}
   .ig-strip a{font-weight:800;color:var(--pink-deep)}
 
+  .tryon-card{background:var(--pink-soft);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;box-shadow:var(--shadow)}
+  .tryon-card h3{margin:0 0 10px;color:var(--brown-deep);font-size:1.25rem}
+  .tryon-card>p{margin:0 0 14px;color:var(--ink2)}
+  .tryon-points{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px}
+  .tryon-points li{display:flex;gap:10px;align-items:flex-start;color:var(--ink2)}
+  .tryon-points li::before{content:"♥";color:var(--pink-deep);font-weight:800;flex:none}
+  .tryon-points li b{color:var(--ink)}
+  .tryon-note{font-size:.88rem;color:var(--muted);margin:14px 0 0}
+
   .svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
   @media (max-width:860px){.svc-grid{grid-template-columns:1fr}}
   .svc{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;box-shadow:var(--shadow)}
@@ -222,7 +231,7 @@
 <div class="site-head">
   <div class="wrap site-head-in">
     <nav class="site-nav" aria-label="主要導覽">
-      <a href="#works">作品</a><a href="#services">服務</a><a href="#booking">預約</a><a href="#contact">聯絡</a><a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG @sugar_nail2008</a>
+      <a href="#works">作品</a><a href="#tryon">試甲效果</a><a href="#services">服務</a><a href="#booking">預約</a><a href="#contact">聯絡</a><a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG @sugar_nail2008</a>
     </nav>
   </div>
 </div>
@@ -471,6 +480,29 @@
       <div class="ig-strip">
         <p>鍾意邊款，cap 圖 DM 我哋問就得；想去 IG 主頁慢慢揀都得。</p>
         <a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">@sugar_nail2008 →</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="tryon">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>試甲效果預覽</h2>
+        <p>想睇下隻手做咗某款之後係咩樣？上傳一張你隻手嘅相，揀一款作品，系統會幫你整一張效果圖參考。</p>
+      </div>
+      <div class="tryon-card">
+        <h3>點樣試？</h3>
+        <ul class="tryon-points">
+          <li><p><b>上傳手相：</b>影一張你隻手嘅相，十隻手指甲入鏡、光線好、背景簡單，效果會準啲。</p></li>
+          <li><p><b>揀一款作品：</b>喺上面作品牆揀一款鍾意嘅款式，或者上傳一張作品相做參考。</p></li>
+          <li><p><b>每日每人最多 3 次：</b>每人每日最多可以生成 3 張效果圖，用晒要等聽日。</p></li>
+          <li><p><b>要登入先用到：</b>試甲頁面要登入先用到，登入方法請經 WhatsApp 或 IG DM 查詢。</p></li>
+        </ul>
+        <div class="cta-row">
+          <a class="btn btn-wa" href="https://wa.me/85298439868?text=%E4%BD%A0%E5%A5%BD%20Sugar%20Nail%20%E2%99%A5%20%E6%88%91%E6%83%B3%E7%94%A8%E8%A9%A6%E7%94%B2%E6%95%88%E6%9E%9C%E9%A0%90%E8%A6%BD%EF%BC%8C%E8%AB%8B%E5%95%8F%E9%BB%9E%E5%85%A5%EF%BC%9F" target="_blank" rel="noopener">WhatsApp 查詢點入</a>
+          <a class="btn btn-ig" href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG DM 查詢點入</a>
+        </div>
+        <p class="tryon-note">效果預覽，實際以到店為準。你上傳嘅手相只用嚟生成效果圖，唔會公開。</p>
       </div>
     </div>
   </section>
