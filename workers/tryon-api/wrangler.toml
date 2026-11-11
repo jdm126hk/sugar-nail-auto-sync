@@ -7,3 +7,7 @@ compatibility_date = "2025-11-01"
 binding = "TRYON_KV"
 id = "2312c6e69e0e415ca2e7e724f084d66b"
 
+# Workers AI binding（測試用：/api/admin/ai-test 用 SDXL 試生成效果圖）。
+# 唔使 secret；免費額度每日 10,000 neurons，超咗要 Workers Paid 先用到。
+[ai]
+binding = "AI"

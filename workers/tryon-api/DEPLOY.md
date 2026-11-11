@@ -107,6 +107,7 @@ curl -X POST $API/api/admin/reset \
 | `POST /api/admin/requests/complete` | 將申請標做完成：body `{id, resultImage}`（效果圖 data URL，JPEG／PNG，約 5MB 上限）或者 `{id, resultUrl}`（https:// 連結，後備方法）；唔存在回 404 |
 | `POST /api/admin/requests/cleanup` | 刪除超過 7 日嘅申請記錄（包括手相、效果圖同索引）；回覆 `{ok:true, deleted:<數目>}` |
 | `POST /api/admin/test-session` | 店主用家模式專用：用 admin token 換一個 TEST 客人 session token，等店主喺用家模式可以提交申請同睇「我嘅效果圖」 |
+| `POST /api/admin/ai-test` | **測試用**：用 Workers AI SDXL image-to-image 試生成一張效果圖（店主限定）；body `{image, prompt, strength?}`，回 `{ok:true, image, model}`。詳情見下面「Workers AI 測試」一節 |
 | `GET /api/admin/accounts` | 帳戶名單（連今日用量） |
 | `POST /api/admin/accounts/create` | 開帳戶（掃 QR Code；已存在回 existed:true） |
 | `POST /api/admin/accounts/update` | 改名／改狀態（active、disabled、void） |
@@ -130,6 +131,35 @@ Pass2U 模型「美甲套票」（Model ID 380564）係 6 次蓋章卡：卡面�
 管理畫面「帳戶管理」有個「🔄 同步客戶資料」掣：店主撳一下，`POST /api/admin/sync-request` 會記低一個 pending 請求；Muse 每半小時檢查一次，見到請求就去 Pass2U 匯出最新 CSV 再匯入，之後 `POST /api/admin/sync-complete` 記低結果（新增／更新／總數）同清走請求。`GET /api/admin/sync-request` 俾頁面顯示「同步進行中」定「上次同步」時間。 |
 
 帳戶規則：未登記嘅 QR 照樣用共用密碼登入到；有記錄而狀態係停用／作廢就唔俾登入。
+
+## Workers AI 測試（唔經 Muse 生成效果圖）
+
+目標：證明 Worker 自己收到提交嗰陣就可以生成效果圖，唔使靠 Muse 每 5 分鐘檢查。呢個係**測試階段**，正式流程未改——客人提交依然只係存申請，等 Muse 定時生成。
+
+**端點：** `POST /api/admin/ai-test`（要 admin token；無 token 回 401）
+
+```bash
+API=https://sugarnail-tryon-api.<你嘅 workers 子域名>.workers.dev
+
+# 店主登入拎 ADMIN_TOKEN（見上面第 5 節）
+# image 用手相嘅 data URL（JPEG／PNG，約 5MB 上限）；prompt 用文字描述嗰款
+curl -X POST $API/api/admin/ai-test \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer ADMIN_TOKEN" \
+  -d '{"image":"data:image/jpeg;base64,...","prompt":"paint the fingernails with a Hello Kitty bakery design, pastel blue and brown, 3D cupcakes, stars and rhinestones, keep the hands, pose, skin tone, lighting and background exactly the same","strength":0.6}'
+```
+
+成功回 `{ok:true, image:"data:image/png;base64,...", model:"@cf/stabilityai/stable-diffusion-xl-base-1.0"}`；`env.AI` 未設定（例如本地測試 mock 冇 AI）回 503「AI 未設定」；AI 出錯回 502，唔會假裝成功。
+
+**輸入格式（已核實官方文件）：** 模型 `@cf/stabilityai/stable-diffusion-xl-base-1.0`，文件 https://developers.cloudflare.com/workers-ai/models/stable-diffusion-xl-base-1.0/。img2img 參數：`prompt`（必填文字）、`image_b64`（純 base64，唔帶 `data:` 前綴）、`strength`（0–1，預設 0.6；愈低愈貼近原相）、`num_steps`（預設 20，上限 20）、`guidance`（預設 7.5）。Binding（`env.AI.run`）回傳係 `ReadableStream` 圖片 bytes；程式亦兼容 REST 嗰種 `{image: "<base64>"}` 回覆。
+
+**注意：**
+- **SDXL 一次只食一張相加文字**：手相當輸入相，設計款式只可以用 prompt 文字描述，唔可以直接傳設計參考相入去。所以效果未必有 Muse（兩張相對照）咁貼近原款，要實測比較質素先決定用唔用。
+- **⚠️ 模型計劃棄用：官方文件寫明呢個模型 Planned Deprecation 係 2026-11-20。** 測試可以照做，但正式轉用之前要搵代替模型（例如 `@cf/runwayml/stable-diffusion-v1-5-img2img`），唔好長期依賴一個就快棄用嘅模型。
+- **免費額度：** Workers AI 每日免費 10,000 neurons（每日 00:00 UTC 重置），超咗要 Workers Paid 先用到，收費 $0.011／1,000 neurons。官方定價頁 https://developers.cloudflare.com/workers-ai/platform/pricing/ 冇列出 SDXL 每張幾多 neurons（模型頁寫 $0.00／step），所以每張實際用幾多要去 Dashboard → Workers AI 睇用量，唔好當實數。
+- **用量唔會喺回覆入面：** binding 唔回 neuron 用量，要去 Cloudflare Dashboard 睇。
+- **牆鐘限制未驗證：** SDXL 生成一張大約 15–20 秒，喺免費層 Worker 請求入面等唔等得切（免費層 CPU 上限 10ms 係計 CPU 唔計等 AI 嘅時間，但請求總時限要實機先知），要部署後實測先確認。正式流程如果改用呢個方法，應該用 `ctx.waitUntil()` 喺背景生成，唔好叫客人等成個請求。
+- 設定：`wrangler.toml` 已加 `[ai] binding = "AI"`，唔使 secret，部署嗰陣自動生效。
 
 ## 效果圖 7 日保留期
 

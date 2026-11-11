@@ -536,5 +536,90 @@ console.log("== 登入限速 ==");
   check("同一 IP 錯 11 次後回 429", last.status === 429);
 }
 
+console.log("== Workers AI 測試（ai-test 端點）==");
+{
+  // 本地 mock 預設冇 env.AI：回 503
+  const noAi = await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "paint the nails pink" },
+    token: adminToken,
+  });
+  check("未設定 AI 回 503", noAi.status === 503 && (noAi.data?.error || "").includes("AI 未設定"));
+  // 無 token → 401（就算未設定 AI 都係先驗證身份）
+  const noAuth = await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "paint the nails pink" },
+  });
+  check("無 token ai-test 拒絕（401）", noAuth.status === 401);
+  // 掛一個 mock AI：模擬 binding 回 ReadableStream（官方文件寫明）
+  const FAKE_PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  env.AI = {
+    calls: [],
+    async run(model, inputs) {
+      this.calls.push({ model, inputs });
+      return new ReadableStream({
+        start(controller) {
+          controller.enqueue(FAKE_PNG);
+          controller.close();
+        },
+      });
+    },
+  };
+  // 圖片格式錯 → 400
+  const badImg = await call("/api/admin/ai-test", {
+    body: { image: "data:text/plain;base64,xxxx", prompt: "paint the nails pink" },
+    token: adminToken,
+  });
+  check("圖片格式唔啱回 400", badImg.status === 400);
+  // 相太大 → 400
+  const bigImg = await call("/api/admin/ai-test", {
+    body: { image: BIG_PHOTO, prompt: "paint the nails pink" },
+    token: adminToken,
+  });
+  check("相太大回 400", bigImg.status === 400 && (bigImg.data?.error || "").includes("相太大"));
+  // prompt 空 → 400
+  const noPrompt = await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "   " },
+    token: adminToken,
+  });
+  check("prompt 空回 400", noPrompt.status === 400);
+  // strength 超出 0–1 → 400
+  const badStrength = await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "paint the nails pink", strength: 1.5 },
+    token: adminToken,
+  });
+  check("strength 超出 0–1 回 400", badStrength.status === 400);
+  // 成功：回 data URL＋model 名，傳入去 AI 嘅參數要啱
+  const ok = await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "paint the nails pink with Hello Kitty design", strength: 0.6 },
+    token: adminToken,
+  });
+  check("mock AI 生成成功回 200＋PNG data URL", ok.status === 200 && ok.data?.ok === true && typeof ok.data?.image === "string" && ok.data.image.startsWith("data:image/png;base64,"));
+  check("回覆有 model 名", ok.data?.model === "@cf/stabilityai/stable-diffusion-xl-base-1.0");
+  const lastCall = env.AI.calls.at(-1);
+  check("傳去 AI 嘅 model 啱", lastCall?.model === "@cf/stabilityai/stable-diffusion-xl-base-1.0");
+  check("傳去 AI 嘅係 image_b64（純 base64，唔帶 data: 前綴）", lastCall?.inputs?.image_b64 === SMALL_PHOTO.split(",", 2)[1]);
+  check("傳去 AI 嘅 strength 係 0.6", lastCall?.inputs?.strength === 0.6);
+  check("傳去 AI 嘅 prompt 啱", lastCall?.inputs?.prompt === "paint the nails pink with Hello Kitty design");
+  // 唔傳 strength 就用預設 0.6
+  await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "paint the nails pink" },
+    token: adminToken,
+  });
+  check("唔傳 strength 就用預設 0.6", env.AI.calls.at(-1)?.inputs?.strength === 0.6);
+  // mock AI 拋錯 → 502，唔會假裝成功
+  env.AI.run = async () => { throw new Error("mock AI 失敗"); };
+  const err = await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "paint the nails pink" },
+    token: adminToken,
+  });
+  check("AI 出錯回 502", err.status === 502 && err.data?.ok === false);
+  // mock AI 回空結果 → 502
+  env.AI.run = async () => null;
+  const empty = await call("/api/admin/ai-test", {
+    body: { image: SMALL_PHOTO, prompt: "paint the nails pink" },
+    token: adminToken,
+  });
+  check("AI 回空結果回 502", empty.status === 502 && empty.data?.ok === false);
+}
+
 console.log(`\n結果：${passed} 通過，${failed} 失敗`);
 process.exit(failed === 0 ? 0 : 1);
