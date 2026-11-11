@@ -194,16 +194,6 @@ async function aiImageToBytes(result) {
 // 值：{id, qr, name, design, designLink, handPhoto, refPhoto, status, resultUrl, resultImage, createdAt, ts}。
 // refPhoto：客人自備參考相（data URL，冇就 null）。
 // status：pending（等緊生成）／done（已完成）。記錄由 createdAt 起計保留 7 日。
-function requestDateStrings() {
-  // 今日起計過去 8 個香港曆日（覆蓋晒 7 日保留期內嘅記錄）。
-  const days = [];
-  for (let i = 0; i < 8; i++) {
-    const d = hkDate(new Date(Date.now() - i * 24 * 60 * 60 * 1000));
-    if (!days.includes(d)) days.push(d);
-  }
-  return days;
-}
-
 async function listAllKeys(env, prefix) {
   let keys = [];
   let cursor;
@@ -230,18 +220,21 @@ async function loadRequest(env, key) {
 }
 
 // 列出 7 日保留期內嘅申請記錄（最新先）。
+// 注意（2026-11-12 05:04 事故）：舊寫法逐日 list 8 次（每個日期前綴一次），
+// 每 5 分鐘嘅自動生成檢查 ×8 次 list，加埋其他檢查，一日好易超過 KV 免費層
+// 每日 1,000 次 list 上限，令 /api/admin/requests 同 /api/admin/accounts 一齊
+// 500（error code: 1101）。改做一次過 list 全部 req: key（listAllKeys 會分頁），
+// 再喺程式入面按保留期過濾——每次檢查淨係用 1 次 list。
 async function listRecentRequests(env) {
   const cutoff = Date.now() - RETENTION_MS;
   const rows = [];
-  for (const date of requestDateStrings()) {
-    const list = await env.TRYON_KV.list({ prefix: `req:${date}:`, limit: 1000 });
-    for (const item of list.keys) {
-      const rec = await loadRequest(env, item.name);
-      if (!rec) continue;
-      const at = rec.createdAt || rec.ts || 0;
-      if (at < cutoff) continue;
-      rows.push(rec);
-    }
+  const keys = await listAllKeys(env, "req:");
+  for (const item of keys) {
+    const rec = await loadRequest(env, item.name);
+    if (!rec) continue;
+    const at = rec.createdAt || rec.ts || 0;
+    if (at < cutoff) continue;
+    rows.push(rec);
   }
   rows.sort((a, b) => (b.createdAt || b.ts || 0) - (a.createdAt || a.ts || 0));
   return rows;
