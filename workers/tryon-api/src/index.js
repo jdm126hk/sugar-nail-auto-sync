@@ -1,6 +1,7 @@
 // Sugar Nail 試甲 API — Cloudflare Worker（免費層）
-// 職責：登入核對、每日限額計數、店主查用量／重設、記錄申請。
-// 唔做：唔生成圖片、唔存相片、申請本身由靜態頁經 WhatsApp 傳去店舖。
+// 職責：登入核對、每日限額計數、店主查用量／重設、記錄申請（連手相＋效果圖）。
+// 唔做：唔生成圖片（效果圖由 Muse 喺對話入面生成，店主上傳返入嚟）。
+// 申請記錄（手相＋效果圖）保留 7 日，過期唔會再出現，要用 cleanup 先會真正刪除。
 // 密碼永遠唔會出現喺呢個檔案：核對值嚟自 Worker secrets
 // GUEST_PASSWORD_HASH / ADMIN_PASSWORD_HASH（SHA-256 hex）。
 
@@ -9,6 +10,8 @@ const PACKAGE_TOTAL = 6; /* Pass2U 美甲套票（Model 380564）總共 6 次 */
 const SESSION_TTL_SECONDS = 24 * 60 * 60; // 24 小時
 const LOGIN_MAX_FAILS = 10; // 每 IP 每 10 分鐘最多 10 次失敗登入
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
+const RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 申請記錄保留 7 日（由提交時間起計）
+const MAX_IMAGE_CHARS = 7000000; // 相片 data URL 上限：約 5MB（base64 長度計）
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -121,6 +124,96 @@ function bearerToken(request) {
   const auth = request.headers.get("Authorization") || "";
   const m = auth.match(/^Bearer\s+(.+)$/i);
   return m ? m[1].trim() : null;
+}
+
+// 相片 data URL 檢查：只接受 JPEG／PNG，唔超過約 5MB。
+function isDataUrlImage(v) {
+  if (typeof v !== "string") return false;
+  if (v.length > MAX_IMAGE_CHARS) return false;
+  if (
+    !v.startsWith("data:image/jpeg;base64,") &&
+    !v.startsWith("data:image/png;base64,")
+  ) {
+    return false;
+  }
+  const payload = v.split(",", 2)[1] || "";
+  return payload.length > 0;
+}
+
+function imageTooBig(v) {
+  return typeof v === "string" && v.length > MAX_IMAGE_CHARS;
+}
+
+function isHttpsUrl(v) {
+  return typeof v === "string" && v.startsWith("https://");
+}
+
+// ---------------- 申請記錄 ----------------
+// key：`req:<香港日期>:<ts>-<隨機>`（沿用舊做法：日期前綴就係索引，唔另設索引 key）。
+// 值：{id, qr, name, design, designLink, handPhoto, refPhoto, status, resultUrl, resultImage, createdAt, ts}。
+// refPhoto：客人自備參考相（data URL，冇就 null）。
+// status：pending（等緊生成）／done（已完成）。記錄由 createdAt 起計保留 7 日。
+function requestDateStrings() {
+  // 今日起計過去 8 個香港曆日（覆蓋晒 7 日保留期內嘅記錄）。
+  const days = [];
+  for (let i = 0; i < 8; i++) {
+    const d = hkDate(new Date(Date.now() - i * 24 * 60 * 60 * 1000));
+    if (!days.includes(d)) days.push(d);
+  }
+  return days;
+}
+
+async function listAllKeys(env, prefix) {
+  let keys = [];
+  let cursor;
+  do {
+    const res = await env.TRYON_KV.list({
+      prefix,
+      limit: 1000,
+      ...(cursor ? { cursor } : {}),
+    });
+    keys = keys.concat(res.keys || []);
+    cursor = res.list_complete ? undefined : res.cursor;
+  } while (cursor);
+  return keys;
+}
+
+async function loadRequest(env, key) {
+  const raw = await env.TRYON_KV.get(key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+// 列出 7 日保留期內嘅申請記錄（最新先）。
+async function listRecentRequests(env) {
+  const cutoff = Date.now() - RETENTION_MS;
+  const rows = [];
+  for (const date of requestDateStrings()) {
+    const list = await env.TRYON_KV.list({ prefix: `req:${date}:`, limit: 1000 });
+    for (const item of list.keys) {
+      const rec = await loadRequest(env, item.name);
+      if (!rec) continue;
+      const at = rec.createdAt || rec.ts || 0;
+      if (at < cutoff) continue;
+      rows.push(rec);
+    }
+  }
+  rows.sort((a, b) => (b.createdAt || b.ts || 0) - (a.createdAt || a.ts || 0));
+  return rows;
+}
+
+// 用 id 搵申請記錄（逐個 key 對，呢個量級夠用）。
+async function findRequest(env, id) {
+  const keys = await listAllKeys(env, "req:");
+  for (const item of keys) {
+    const rec = await loadRequest(env, item.name);
+    if (rec && rec.id === id) return { key: item.name, rec };
+  }
+  return null;
 }
 
 // ---------------- 帳戶（店主管理） ----------------
@@ -284,6 +377,35 @@ async function handleSubmit(request, env) {
   if (!design) {
     return json({ ok: false, error: "請揀一個款式" }, 400);
   }
+  const designLink = typeof body?.designLink === "string" ? body.designLink.trim() : "";
+  if (designLink && !isHttpsUrl(designLink)) {
+    return json({ ok: false, error: "作品連結唔啱" }, 400);
+  }
+  const handPhoto = body?.handPhoto;
+  if (typeof handPhoto !== "string" || !handPhoto) {
+    return json({ ok: false, error: "請上傳你隻手嘅相" }, 400);
+  }
+  if (imageTooBig(handPhoto)) {
+    return json({ ok: false, error: "相太大，請重新上傳一張細啲嘅相" }, 400);
+  }
+  if (!isDataUrlImage(handPhoto)) {
+    return json({ ok: false, error: "手相格式唔啱，請重新上傳" }, 400);
+  }
+  // 自備參考相（可選）：揀咗 181 款嗰陣唔傳；上傳咗先會跟埋申請一齊傳去。
+  const refPhotoRaw = body?.refPhoto;
+  let refPhoto = null;
+  if (refPhotoRaw !== undefined && refPhotoRaw !== null && refPhotoRaw !== "") {
+    if (typeof refPhotoRaw !== "string") {
+      return json({ ok: false, error: "參考相格式唔啱，請重新上傳" }, 400);
+    }
+    if (imageTooBig(refPhotoRaw)) {
+      return json({ ok: false, error: "參考相太大，請重新上傳一張細啲嘅相" }, 400);
+    }
+    if (!isDataUrlImage(refPhotoRaw)) {
+      return json({ ok: false, error: "參考相格式唔啱，請重新上傳" }, 400);
+    }
+    refPhoto = refPhotoRaw;
+  }
 
   const date = hkDate();
   if (!session.unlimited) {
@@ -296,10 +418,25 @@ async function handleSubmit(request, env) {
   }
 
   const ts = Date.now();
+  const id = crypto.randomUUID();
   const key = `req:${date}:${ts}-${randomHex(4)}`;
+  const account = await getAccount(env, session.qr);
   await env.TRYON_KV.put(
     key,
-    JSON.stringify({ qr: session.qr, design, ts }),
+    JSON.stringify({
+      id,
+      qr: session.qr,
+      name: account?.name || "",
+      design,
+      designLink,
+      handPhoto,
+      refPhoto,
+      status: "pending",
+      resultUrl: null,
+      resultImage: null,
+      createdAt: ts,
+      ts,
+    }),
   );
 
   const used = session.unlimited
@@ -307,8 +444,33 @@ async function handleSubmit(request, env) {
     : await getUsed(env, date, session.qr);
   return json({
     ok: true,
+    id,
     remaining: session.unlimited ? null : Math.max(0, DAILY_LIMIT - used),
     unlimited: session.unlimited,
+  });
+}
+
+/* 客人睇自己 7 日內嘅申請（只回 metadata＋效果圖，唔回手相）。 */
+async function handleMyRequests(request, env) {
+  const session = await getSession(env, bearerToken(request));
+  if (!session || session.admin) {
+    return json({ ok: false, error: "登入已失效，請重新登入" }, 401);
+  }
+  const rows = await listRecentRequests(env);
+  const mine = rows.filter((r) => r.qr === session.qr);
+  return json({
+    ok: true,
+    requests: mine.map((r) => ({
+      id: r.id || "",
+      design: r.design || "",
+      designLink: r.designLink || "",
+      status: r.status || "pending",
+      resultUrl: r.resultUrl || null,
+      resultImage: r.resultImage || null,
+      hasRefPhoto: !!r.refPhoto,
+      createdAt: r.createdAt || r.ts || 0,
+      ts: r.ts || r.createdAt || 0,
+    })),
   });
 }
 
@@ -374,28 +536,133 @@ async function handleAdminReset(request, env) {
   return json({ ok: true, qr, remaining: DAILY_LIMIT });
 }
 
+/* 店主睇最近 7 日嘅申請記錄（metadata only：唔回手相，效果圖只回「有冇」）。 */
 async function handleAdminRequests(request, env) {
   if (!(await requireAdmin(request, env))) {
     return json({ ok: false, error: "請先以店主身份登入" }, 401);
   }
-  const date = hkDate();
-  const prefix = `req:${date}:`;
-  const list = await env.TRYON_KV.list({ prefix, limit: 100 });
-  const rows = [];
-  for (const item of list.keys) {
-    const raw = await env.TRYON_KV.get(item.name);
-    if (!raw) continue;
-    try {
-      const rec = JSON.parse(raw);
-      const account = await getAccount(env, rec.qr);
-      rec.name = account?.name || "";
-      rows.push(rec);
-    } catch {
-      // 壞記錄跳過
+  const rows = await listRecentRequests(env);
+  const out = [];
+  for (const rec of rows) {
+    const account = await getAccount(env, rec.qr);
+    out.push({
+      id: rec.id || "",
+      qr: rec.qr || "",
+      name: rec.name || account?.name || "",
+      design: rec.design || "",
+      designLink: rec.designLink || "",
+      status: rec.status || "pending",
+      resultUrl: rec.resultUrl || null,
+      hasResultImage: !!rec.resultImage,
+      hasResult: !!(rec.resultImage || rec.resultUrl),
+      hasRefPhoto: !!rec.refPhoto,
+      createdAt: rec.createdAt || rec.ts || 0,
+      ts: rec.ts || rec.createdAt || 0,
+    });
+  }
+  return json({ ok: true, date: hkDate(), requests: out.slice(0, 100) });
+}
+
+/* 店主睇單一申請成個記錄（包括手相＋效果圖）。 */
+async function handleAdminRequestDetail(request, env, id) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const found = await findRequest(env, id);
+  if (!found) {
+    return json({ ok: false, error: "搵唔到呢個申請" }, 404);
+  }
+  return json({ ok: true, request: found.rec });
+}
+
+/* 店主將申請標做完成：效果圖本身存入 KV（resultImage data URL），
+   或者用 resultUrl 連結做後備。 */
+async function handleAdminRequestComplete(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const body = await readJson(request);
+  const id = typeof body?.id === "string" ? body.id.trim() : "";
+  if (!id) {
+    return json({ ok: false, error: "請提供申請編號" }, 400);
+  }
+  const found = await findRequest(env, id);
+  if (!found) {
+    return json({ ok: false, error: "搵唔到呢個申請" }, 404);
+  }
+  const resultImage = body?.resultImage;
+  const resultUrl = typeof body?.resultUrl === "string" ? body.resultUrl.trim() : "";
+  if (resultImage !== undefined && resultImage !== null && resultImage !== "") {
+    if (imageTooBig(resultImage)) {
+      return json({ ok: false, error: "效果圖太大，請用細啲嘅圖" }, 400);
+    }
+    if (!isDataUrlImage(resultImage)) {
+      return json({ ok: false, error: "效果圖格式唔啱，請用 JPG 或者 PNG" }, 400);
+    }
+  } else if (resultUrl) {
+    if (!isHttpsUrl(resultUrl)) {
+      return json({ ok: false, error: "效果圖連結唔啱" }, 400);
+    }
+  } else {
+    return json({ ok: false, error: "請提供效果圖（圖片或者連結）" }, 400);
+  }
+  const rec = found.rec;
+  rec.status = "done";
+  rec.completedAt = Date.now();
+  if (resultImage) {
+    rec.resultImage = resultImage;
+    rec.resultUrl = null;
+  } else {
+    rec.resultUrl = resultUrl;
+    rec.resultImage = null;
+  }
+  await env.TRYON_KV.put(found.key, JSON.stringify(rec));
+  return json({
+    ok: true,
+    request: {
+      id: rec.id || "",
+      design: rec.design || "",
+      designLink: rec.designLink || "",
+      status: rec.status,
+      resultUrl: rec.resultUrl || null,
+      resultImage: rec.resultImage || null,
+      createdAt: rec.createdAt || rec.ts || 0,
+      ts: rec.ts || rec.createdAt || 0,
+    },
+  });
+}
+
+/* 刪除超過 7 日嘅申請記錄（連手相、效果圖同嗰條 key 一齊清走）。 */
+async function handleAdminRequestsCleanup(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const cutoff = Date.now() - RETENTION_MS;
+  const keys = await listAllKeys(env, "req:");
+  let deleted = 0;
+  for (const item of keys) {
+    const rec = await loadRequest(env, item.name);
+    const at = rec ? rec.createdAt || rec.ts || 0 : 0;
+    if (!rec || at < cutoff) {
+      await env.TRYON_KV.delete(item.name);
+      deleted++;
     }
   }
-  rows.sort((a, b) => b.ts - a.ts);
-  return json({ ok: true, date, requests: rows.slice(0, 100) });
+  return json({ ok: true, deleted });
+}
+
+/* 店主切換去用家模式：開一個 TEST 測試身分嘅客人 session，
+   等用家模式可以照常用客人 token 提交申請、睇自己嘅效果圖。 */
+async function handleAdminTestSession(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const token = await createSession(env, {
+    qr: "test",
+    unlimited: true,
+    created: Date.now(),
+  });
+  return json({ ok: true, token });
 }
 
 // ---------------- 帳戶管理（店主） ----------------
@@ -589,6 +856,9 @@ export default {
     if (path === "/api/submit" && request.method === "POST") {
       return handleSubmit(request, env);
     }
+    if (path === "/api/my-requests" && request.method === "GET") {
+      return handleMyRequests(request, env);
+    }
     if (path === "/api/admin/login" && request.method === "POST") {
       return handleAdminLogin(request, env);
     }
@@ -600,6 +870,22 @@ export default {
     }
     if (path === "/api/admin/requests" && request.method === "GET") {
       return handleAdminRequests(request, env);
+    }
+    if (path === "/api/admin/requests/complete" && request.method === "POST") {
+      return handleAdminRequestComplete(request, env);
+    }
+    if (path === "/api/admin/requests/cleanup" && request.method === "POST") {
+      return handleAdminRequestsCleanup(request, env);
+    }
+    if (path === "/api/admin/test-session" && request.method === "POST") {
+      return handleAdminTestSession(request, env);
+    }
+    if (path.startsWith("/api/admin/requests/") && request.method === "GET") {
+      const id = path.slice("/api/admin/requests/".length);
+      if (!id || id.includes("/")) {
+        return json({ ok: false, error: "not found" }, 404);
+      }
+      return handleAdminRequestDetail(request, env, id);
     }
     if (path === "/api/admin/accounts" && request.method === "GET") {
       return handleAdminAccountsList(request, env);
