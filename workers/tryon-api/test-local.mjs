@@ -184,6 +184,92 @@ let adminToken;
   check("重設後客人可以再提交", s.status === 200 && s.data?.remaining === 2);
 }
 
+console.log("== 帳戶管理 ==");
+{
+  // 未登記嘅 QR 照樣登入到（沿用共用密碼制）
+  const r = await call("/api/login", {
+    body: { qr: "cust001", password: "test-guest-password" },
+  });
+  check("未登記帳戶照樣登入到", r.status === 200 && r.data?.ok === true);
+  const custToken = r.data?.token;
+  // 掃 QR 開帳戶
+  const c = await call("/api/admin/accounts/create", {
+    body: { qr: "CUST001", name: "阿 May" },
+    token: adminToken,
+  });
+  check("開帳戶成功，QR 歸一化做小楷", c.status === 200 && c.data?.account?.qr === "cust001" && c.data?.account?.name === "阿 May");
+  const c2 = await call("/api/admin/accounts/create", {
+    body: { qr: "cust001" },
+    token: adminToken,
+  });
+  check("重複開同一個帳戶回 existed:true", c2.status === 200 && c2.data?.existed === true);
+  // 帳戶名單見到名
+  const list = await call("/api/admin/accounts", { method: "GET", token: adminToken });
+  const row = list.data?.accounts?.find((x) => x.qr === "cust001");
+  check("帳戶名單見到阿 May", list.status === 200 && row?.name === "阿 May" && row?.status === "active");
+  // 停用就登入唔到
+  const dis = await call("/api/admin/accounts/update", {
+    body: { qr: "cust001", status: "disabled" },
+    token: adminToken,
+  });
+  check("停用帳戶成功", dis.status === 200 && dis.data?.account?.status === "disabled");
+  const blocked = await call("/api/login", {
+    body: { qr: "cust001", password: "test-guest-password" },
+  });
+  check("已停用帳戶登入被拒（403）", blocked.status === 403);
+  // 改名＋重新啟用
+  const upd = await call("/api/admin/accounts/update", {
+    body: { qr: "cust001", name: "阿 May（改名）", status: "active" },
+    token: adminToken,
+  });
+  check("改名＋啟用成功", upd.status === 200 && upd.data?.account?.name === "阿 May（改名）");
+  const back = await call("/api/login", {
+    body: { qr: "cust001", password: "test-guest-password" },
+  });
+  check("啟用後登入返得", back.status === 200 && back.data?.ok === true);
+  // 作廢就登入唔到
+  await call("/api/admin/accounts/update", {
+    body: { qr: "cust001", status: "void" },
+    token: adminToken,
+  });
+  const voided = await call("/api/login", {
+    body: { qr: "cust001", password: "test-guest-password" },
+  });
+  check("已作廢帳戶登入被拒（403）", voided.status === 403);
+  // 刪除帳戶後，未登記狀態，照樣登入到
+  const del = await call("/api/admin/accounts/delete", {
+    body: { qr: "cust001" },
+    token: adminToken,
+  });
+  check("刪除帳戶成功", del.status === 200);
+  const gone = await call("/api/login", {
+    body: { qr: "cust001", password: "test-guest-password" },
+  });
+  check("刪除後登入返得（未登記照入）", gone.status === 200 && gone.data?.ok === true);
+  // CSV 匯入：新增＋更新名
+  const imp = await call("/api/admin/accounts/import", {
+    body: { rows: [
+      { qr: "cust002", name: "阿強" },
+      { qr: "cust003", name: "阿珍" },
+      { qr: "cust002", name: "阿強（更新）" },
+      { qr: "", name: "無 QR" },
+    ] },
+    token: adminToken,
+  });
+  check("CSV 匯入：新增 2、更新 1、跳過 1", imp.status === 200 && imp.data?.created === 2 && imp.data?.updated === 1 && imp.data?.skipped === 1);
+  const list2 = await call("/api/admin/accounts", { method: "GET", token: adminToken });
+  const r2 = list2.data?.accounts?.find((x) => x.qr === "cust002");
+  check("匯入後 cust002 個名更新咗", r2?.name === "阿強（更新）");
+  // 無 token 唔俾開帳戶
+  const noAuth = await call("/api/admin/accounts/create", {
+    body: { qr: "cust999", name: "唔應該入到" },
+  });
+  check("無 token 開帳戶拒絕（401）", noAuth.status === 401);
+  // 用量表有埋客人名
+  const u = await call("/api/admin/usage", { method: "GET", token: adminToken });
+  check("用量表有客人名欄位", u.status === 200 && Array.isArray(u.data?.usage));
+}
+
 console.log("== 登入限速 ==");
 {
   // 用一個獨立 IP，錯 10 次之後第 11 次要回 429。
