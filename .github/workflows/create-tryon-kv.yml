@@ -1,0 +1,20 @@
+name: Create Try-On KV namespace (one-off)
+
+# One-off helper: creates the Workers KV namespace used by the try-on
+# Worker, using the repo's existing CF_API_TOKEN / CF_ACCOUNT_ID secrets.
+# Run once via Actions > this workflow > Run workflow, then read the
+# namespace ID from the run log and put it into
+# workers/tryon-api/wrangler.toml. Delete this file afterwards if you like.
+on:
+  workflow_dispatch:
+
+jobs:
+  create-kv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create KV namespace
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: kv namespace create sugarnail-tryon
