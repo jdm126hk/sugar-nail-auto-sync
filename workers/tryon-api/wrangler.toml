@@ -1,0 +1,8 @@
+name = "sugarnail-tryon-api"
+main = "src/index.js"
+compatibility_date = "2025-11-01"
+
+# KV namespace ID（2026-11-11 經 GitHub Actions 建立，sugarnail-tryon）。
+[[kv_namespaces]]
+binding = "TRYON_KV"
+id = "2312c6e69e0e415ca2e7e724f084d66b"
