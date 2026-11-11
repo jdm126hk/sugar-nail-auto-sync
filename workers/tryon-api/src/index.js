@@ -709,7 +709,8 @@ async function handleAdminTestSession(request, env) {
 /* Workers AI 測試（店主限定）：用 SDXL image-to-image 試生成一張效果圖。
    只係測試端點，唔係正式流程——正式提交依然只係存申請，等 Muse 每 5 分鐘檢查生成。
    輸入格式根據官方文件（https://developers.cloudflare.com/workers-ai/models/stable-diffusion-xl-base-1.0/）：
-   prompt（必填）、image_b64（純 base64，唔帶 data: 前綴）、strength（0–1，愈低愈貼近原相）、
+   prompt（必填）、image（整數陣列，原相 bytes；binding 必須用呢個，傳 image_b64
+   會失敗）、strength（0–1，愈低愈貼近原相）、
    num_steps（預設 20，上限 20）、guidance（預設 7.5）。SDXL 一次只食一張相加文字，
    設計參考相唔可以直接傳入去，要靠 prompt 文字描述嗰款。
    env.AI 係 wrangler.toml 嘅 [ai] binding；本地測試 mock 冇 AI 嗰陣回 503。
@@ -744,13 +745,15 @@ async function handleAdminAiTest(request, env) {
     }
     strength = n;
   }
-  // image_b64 要純 base64，唔帶 data:image/...;base64, 前綴。
+  // 注意（2026-11-11 live 實測）：binding 必須傳 image 整數陣列，傳 image_b64
+  // 會失敗（"input tensor `image` is not present in the model"）；image_b64
+  // 似乎只係 REST API 先接受。imageB64 要純 base64，唔帶 data:image/...;base64, 前綴。
   const imageB64 = image.split(",", 2)[1] || "";
   let bytes;
   try {
     const result = await env.AI.run(AI_TEST_MODEL, {
       prompt,
-      image_b64: imageB64,
+      image: Array.from(base64ToBytes(imageB64)),
       strength,
       num_steps: 20,
       guidance: 7.5,
