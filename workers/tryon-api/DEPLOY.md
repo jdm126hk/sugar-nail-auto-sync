@@ -102,6 +102,13 @@ curl -X POST $API/api/admin/reset \
 | `GET /api/admin/usage` | 今日每人用量 |
 | `POST /api/admin/reset` | 重設某人今日次數做 0 |
 | `GET /api/admin/requests` | 今日申請記錄（最新先行，最多 100 則） |
+| `GET /api/admin/accounts` | 帳戶名單（連今日用量） |
+| `POST /api/admin/accounts/create` | 開帳戶（掃 QR Code；已存在回 existed:true） |
+| `POST /api/admin/accounts/update` | 改名／改狀態（active、disabled、void） |
+| `POST /api/admin/accounts/delete` | 刪除帳戶 |
+| `POST /api/admin/accounts/import` | CSV 匯入（每行 QR Code,客人姓名；新增＋補名） |
+
+帳戶規則：未登記嘅 QR 照樣用共用密碼登入到；有記錄而狀態係停用／作廢就唔俾登入。
 
 ## 本地測試
 
