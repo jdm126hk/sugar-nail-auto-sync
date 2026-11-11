@@ -97,11 +97,16 @@ curl -X POST $API/api/admin/reset \
 | `GET /api/health` | 健康檢查 |
 | `POST /api/login` | 客人登入（QR Code＋共用密碼；TEST 無限次；回覆有客人名＋套票卡下載連結） |
 | `POST /api/quota` | 查今日剩餘次數 |
-| `POST /api/submit` | 記錄一次申請並扣次數（每日最多 3 次） |
+| `POST /api/submit` | 客人提交試甲申請（每日最多 3 次；TEST 無限）：body `{token, design, designLink, handPhoto, refPhoto?}`，handPhoto 係 JPEG／PNG data URL（約 5MB 上限，太大回 400「相太大」）；refPhoto 係可選嘅自備參考相（同樣 JPEG／PNG data URL、約 5MB 上限，太大回 400「參考相太大」），揀咗 181 款嗰陣唔傳；回覆 `{ok:true, id, remaining}` |
+| `GET /api/my-requests` | 客人用自己嘅 token 睇自己 7 日內嘅申請（最新先行；metadata＋resultImage／resultUrl，唔含手相／參考相本身；每行有 hasRefPhoto 表示有冇自備參考相） |
 | `POST /api/admin/login` | 店主登入 |
 | `GET /api/admin/usage` | 今日每人用量 |
 | `POST /api/admin/reset` | 重設某人今日次數做 0 |
-| `GET /api/admin/requests` | 今日申請記錄（最新先行，最多 100 則） |
+| `GET /api/admin/requests` | 最近 7 日申請記錄（最新先行，最多 100 則；metadata only，唔含手相／參考相／效果圖本身，但有 hasResult／hasResultImage／hasRefPhoto） |
+| `GET /api/admin/requests/<id>` | 睇成個申請記錄（包括手相 handPhoto、自備參考相 refPhoto 同效果圖 resultImage／resultUrl）；唔存在回 404 |
+| `POST /api/admin/requests/complete` | 將申請標做完成：body `{id, resultImage}`（效果圖 data URL，JPEG／PNG，約 5MB 上限）或者 `{id, resultUrl}`（https:// 連結，後備方法）；唔存在回 404 |
+| `POST /api/admin/requests/cleanup` | 刪除超過 7 日嘅申請記錄（包括手相、效果圖同索引）；回覆 `{ok:true, deleted:<數目>}` |
+| `POST /api/admin/test-session` | 店主用家模式專用：用 admin token 換一個 TEST 客人 session token，等店主喺用家模式可以提交申請同睇「我嘅效果圖」 |
 | `GET /api/admin/accounts` | 帳戶名單（連今日用量） |
 | `POST /api/admin/accounts/create` | 開帳戶（掃 QR Code；已存在回 existed:true） |
 | `POST /api/admin/accounts/update` | 改名／改狀態（active、disabled、void） |
@@ -125,6 +130,14 @@ Pass2U 模型「美甲套票」（Model ID 380564）係 6 次蓋章卡：卡面�
 管理畫面「帳戶管理」有個「🔄 同步客戶資料」掣：店主撳一下，`POST /api/admin/sync-request` 會記低一個 pending 請求；Muse 每半小時檢查一次，見到請求就去 Pass2U 匯出最新 CSV 再匯入，之後 `POST /api/admin/sync-complete` 記低結果（新增／更新／總數）同清走請求。`GET /api/admin/sync-request` 俾頁面顯示「同步進行中」定「上次同步」時間。 |
 
 帳戶規則：未登記嘅 QR 照樣用共用密碼登入到；有記錄而狀態係停用／作廢就唔俾登入。
+
+## 效果圖 7 日保留期
+
+- 申請記錄以提交時間（createdAt）起計保留 **7 日**。`GET /api/my-requests` 同 `GET /api/admin/requests` 只回 7 日內嘅記錄，過期嘅唔出現。
+- 效果圖本身存入 KV（`resultImage` data URL，跟申請記錄一齊存），唔係只存一條 repo 連結，所以 7 日後可以一併清走。`POST /api/admin/requests/complete` 接受 `{id, resultImage}`（優先）或者 `{id, resultUrl}`（後備）。
+- 清理要人手（或者之後加 cron）call `POST /api/admin/requests/cleanup`：刪除超過 7 日嘅申請記錄，包括手相、效果圖同索引，回覆 `{ok:true, deleted:<數目>}`。**而家未有自動排程去 call 呢個 endpoint**，要定期人手清，或者之後再加。
+- 頁面「我嘅效果圖」寫明「效果圖保留 7 日」，每張顯示到期日（提交日＋7 日）。管理畫面申請記錄每行顯示客人個名、款名、提交時間、狀態（等緊生成／已完成）、有冇效果圖，另有「睇手相」同「睇效果圖」掣。
+- 申請記錄存喺 KV，key 係 `req:<香港日期>:<時間戳>-<隨機碼>`，日期前綴就係索引；cleanup 刪走 key 本身就等於清埋索引。舊版（未有呢次改動之前）提交嘅記錄冇 `id`／`createdAt`，用 `ts` 做後備，7 日內會自然過期，detail／complete 會回 404。
 
 ## 本地測試
 
