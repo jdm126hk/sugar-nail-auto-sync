@@ -83,12 +83,19 @@
       /* ---------- forms ---------- */
       label.field{display:block;margin-top:16px;font-weight:700;font-size:.95rem}
       label.field span{display:block;margin-bottom:6px}
-      input[type="text"],input[type="password"]{
+      input[type="text"],input[type="password"],textarea{
         width:100%;padding:12px 14px;font-size:1rem;font-family:inherit;
         border:1.5px solid var(--line);border-radius:12px;
         background:var(--field);color:var(--ink);
       }
-      input:focus{outline:3px solid var(--pink-deep);border-color:var(--brown)}
+      input:focus,textarea:focus{outline:3px solid var(--pink-deep);border-color:var(--brown)}
+      .status-badge{display:inline-block;font-size:.72rem;font-weight:900;border-radius:999px;padding:2px 9px;margin-left:6px;vertical-align:middle}
+      .status-active{background:var(--ok);color:#fff}
+      .status-disabled{background:#B08A2E;color:#fff}
+      .status-void{background:#9B2C2C;color:#fff}
+      .acct-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+      .acct-actions .btn{padding:6px 12px;font-size:.85rem;min-height:34px}
+      .name-input{width:150px;padding:6px 10px;font-size:.9rem}
       .btn{
         display:inline-flex;align-items:center;justify-content:center;gap:8px;
         border:none;cursor:pointer;font-family:inherit;font-weight:800;
@@ -385,6 +392,49 @@
             <button class="btn small" id="btnManualReset" type="button">重設呢個 ID 今日次數</button>
           </div>
           <p class="hint" id="adminMsg" role="status"></p>
+          <p style="font-weight:900;margin:22px 0 4px">帳戶管理</p>
+          <p class="hint">掃客人張卡嘅 QR Code 即刻開帳戶，順便記低個名。未開帳戶嘅卡照樣登入到；停用或者作廢咗嘅帳戶就入唔到。</p>
+          <div class="btn-row">
+            <button class="btn" id="btnScanAccount" type="button">📷 掃 QR Code 開帳戶</button>
+          </div>
+          <div id="scanBox" hidden style="margin-top:14px">
+            <video id="scanVideo" playsinline muted style="width:100%;max-width:420px;border-radius:12px;background:#000"></video>
+            <p class="hint" id="scanStatus" role="status">對準客人張卡嘅 QR Code…</p>
+            <div class="btn-row">
+              <button class="btn ghost small" id="btnStopScan" type="button">停止掃描</button>
+            </div>
+          </div>
+          <label class="field">
+            <span>登入 ID（QR Code 內容）</span>
+            <input type="text" id="newAcctQr" placeholder="掃描後會自動填入，或者手動輸入" />
+          </label>
+          <label class="field">
+            <span>客人姓名（可唔填，之後用 CSV 補返）</span>
+            <input type="text" id="newAcctName" placeholder="例如：阿 May" />
+          </label>
+          <div class="btn-row">
+            <button class="btn small" id="btnCreateAccount" type="button">開帳戶</button>
+          </div>
+          <p class="hint" id="acctMsg" role="status"></p>
+          <label class="field">
+            <span>搵帳戶（打 QR Code 或者名）</span>
+            <input type="text" id="acctSearch" placeholder="例如：阿 May 或者卡上面嗰串編號" />
+          </label>
+          <div class="usage-list" id="accountList"></div>
+          <p style="font-weight:900;margin:22px 0 4px">CSV 匯入客人姓名</p>
+          <p class="hint">每行「QR Code,客人姓名」：有 QR 就開帳戶或者補名。可以用檔案上傳，或者直接貼上。</p>
+          <div class="btn-row">
+            <button class="btn ghost small" id="btnCsvFile" type="button">揀 CSV 檔案</button>
+          </div>
+          <input type="file" id="fileCsv" class="hidden-input" accept=".csv,text/csv,text/plain" />
+          <label class="field">
+            <span>或者直接貼上 CSV 內容</span>
+            <textarea id="csvText" rows="3" placeholder="QR Code,客人姓名"></textarea>
+          </label>
+          <div class="btn-row">
+            <button class="btn small" id="btnImportCsv" type="button">匯入</button>
+          </div>
+          <p class="hint" id="csvMsg" role="status"></p>
           <p style="font-weight:900;margin:22px 0 4px">今日收到嘅申請</p>
           <p class="hint">以下係今日經呢頁提交、伺服器記錄低嘅試甲申請。</p>
           <div class="usage-list" id="requestList"></div>
@@ -816,7 +866,8 @@
             var row = document.createElement("div");
             row.className = "usage-row";
             var left = document.createElement("div");
-            var uid = document.createElement("span"); uid.className = "uid"; uid.textContent = qr;
+            var uid = document.createElement("span"); uid.className = "uid";
+            uid.textContent = (r.name ? r.name + "（" + qr + "）" : qr);
             left.appendChild(uid);
             if(isTest){
               var badge = document.createElement("span"); badge.className = "test-badge"; badge.textContent = "測試帳戶";
@@ -853,7 +904,7 @@
             row.className = "usage-row";
             var left = document.createElement("div");
             var uid = document.createElement("span"); uid.className = "uid";
-            uid.textContent = r.qr || r.id || "";
+            uid.textContent = r.name ? (r.name + "（" + (r.qr || r.id || "") + "）") : (r.qr || r.id || "");
             var det = document.createElement("div"); det.className = "ucount";
             var t = fmtTime(r.time || r.ts || r.at || r.createdAt || r.timestamp);
             det.textContent = "款式：" + (r.design || r.style || "") + (t ? " · " + t : "");
@@ -864,6 +915,10 @@
         }
 
         function loadAdminData(){
+          api("/api/admin/accounts", {method:"GET", admin:true}).then(function(res){
+            if(res.ok === false) return;
+            renderAccounts(res.accounts || []);
+          });
           api("/api/admin/usage", {admin:true}).then(function(res){
             if(res.ok === false){
               adminMsg.textContent = res.error || "載入用量失敗。";
@@ -898,6 +953,207 @@
           if(!id){ adminMsg.textContent = "請先輸入要重設嘅登入 ID（QR Code 內容）。"; return; }
           if(id.toUpperCase() === TEST_ID){ adminMsg.textContent = "TEST 係測試帳戶，本來就唔計次數、唔使重設。"; return; }
           resetUsageFor(id);
+        });
+
+        /* ---------- 帳戶管理：掃 QR 開帳戶／名單／CSV 匯入 ---------- */
+        var accountList = document.getElementById("accountList");
+        var acctSearch = document.getElementById("acctSearch");
+        var acctMsg = document.getElementById("acctMsg");
+        var csvMsg = document.getElementById("csvMsg");
+        var allAccounts = [];
+        var STATUS_LABEL = {active:"正常", disabled:"停用", void:"已作廢"};
+
+        function renderAccounts(accounts){
+          allAccounts = accounts || [];
+          var q = acctSearch.value.trim().toLowerCase();
+          accountList.innerHTML = "";
+          var rows = allAccounts.filter(function(a){
+            if(!q) return true;
+            return (a.qr || "").toLowerCase().indexOf(q) !== -1 ||
+              (a.name || "").toLowerCase().indexOf(q) !== -1;
+          });
+          if(rows.length === 0){
+            var empty = document.createElement("p");
+            empty.className = "hint";
+            empty.textContent = allAccounts.length === 0 ? "暫時未開過任何帳戶。掃 QR Code 或者用 CSV 匯入嚟開第一個。" : "搵唔到符合嘅帳戶。";
+            accountList.appendChild(empty);
+            return;
+          }
+          rows.forEach(function(a){
+            var row = document.createElement("div");
+            row.className = "usage-row";
+            var left = document.createElement("div");
+            var uid = document.createElement("span"); uid.className = "uid";
+            uid.textContent = a.name ? (a.name + "（" + a.qr + "）") : (a.qr + "（未補名）");
+            left.appendChild(uid);
+            var badge = document.createElement("span");
+            badge.className = "status-badge status-" + (a.status || "active");
+            badge.textContent = STATUS_LABEL[a.status] || a.status;
+            left.appendChild(badge);
+            var cnt = document.createElement("div"); cnt.className = "ucount";
+            cnt.textContent = "今日已用 " + (a.used || 0) + " 次，仲剩 " + (typeof a.remaining === "number" ? a.remaining : 3) + " 次";
+            left.appendChild(cnt);
+            row.appendChild(left);
+            var actions = document.createElement("div");
+            actions.className = "acct-actions";
+            var nameInput = document.createElement("input");
+            nameInput.type = "text"; nameInput.className = "name-input";
+            nameInput.value = a.name || ""; nameInput.placeholder = "客人姓名";
+            nameInput.setAttribute("aria-label", "客人姓名");
+            actions.appendChild(nameInput);
+            var saveBtn = document.createElement("button");
+            saveBtn.type = "button"; saveBtn.className = "btn ghost small"; saveBtn.textContent = "儲存個名";
+            saveBtn.addEventListener("click", function(){
+              api("/api/admin/accounts/update", {method:"POST", admin:true, body:{qr:a.qr, name:nameInput.value.trim()}}).then(function(res){
+                acctMsg.textContent = res.ok ? ("已更新 " + a.qr + " 嘅名。") : (res.error || "儲存失敗。");
+                if(res.ok) loadAdminData();
+              });
+            });
+            actions.appendChild(saveBtn);
+            function statusBtn(label, status, cls){
+              var b = document.createElement("button");
+              b.type = "button"; b.className = "btn ghost small"; b.textContent = label;
+              b.addEventListener("click", function(){
+                api("/api/admin/accounts/update", {method:"POST", admin:true, body:{qr:a.qr, status:status}}).then(function(res){
+                  acctMsg.textContent = res.ok ? ("已將 " + a.qr + " 改做「" + STATUS_LABEL[status] + "」。") : (res.error || "更改失敗。");
+                  if(res.ok) loadAdminData();
+                });
+              });
+              return b;
+            }
+            if(a.status === "active"){
+              actions.appendChild(statusBtn("停用", "disabled"));
+              actions.appendChild(statusBtn("作廢", "void"));
+            } else {
+              actions.appendChild(statusBtn("啟用", "active"));
+              if(a.status === "disabled") actions.appendChild(statusBtn("作廢", "void"));
+            }
+            var resetBtn = document.createElement("button");
+            resetBtn.type = "button"; resetBtn.className = "btn ghost small"; resetBtn.textContent = "重設今日次數";
+            resetBtn.disabled = ((a.used || 0) === 0);
+            resetBtn.addEventListener("click", function(){ resetUsageFor(a.qr); });
+            actions.appendChild(resetBtn);
+            var delBtn = document.createElement("button");
+            delBtn.type = "button"; delBtn.className = "btn ghost small"; delBtn.textContent = "刪除帳戶";
+            delBtn.addEventListener("click", function(){
+              if(!window.confirm("確定刪除帳戶 " + a.qr + "？刪除後呢張卡未登記，照樣用共用密碼登入到。")) return;
+              api("/api/admin/accounts/delete", {method:"POST", admin:true, body:{qr:a.qr}}).then(function(res){
+                acctMsg.textContent = res.ok ? ("已刪除帳戶 " + a.qr + "。") : (res.error || "刪除失敗。");
+                if(res.ok) loadAdminData();
+              });
+            });
+            actions.appendChild(delBtn);
+            row.appendChild(actions);
+            accountList.appendChild(row);
+          });
+        }
+        acctSearch.addEventListener("input", function(){ renderAccounts(allAccounts); });
+
+        document.getElementById("btnCreateAccount").addEventListener("click", function(){
+          var qr = document.getElementById("newAcctQr").value.trim();
+          var name = document.getElementById("newAcctName").value.trim();
+          if(!qr){ acctMsg.textContent = "請先輸入或者掃描登入 ID（QR Code 內容）。"; return; }
+          api("/api/admin/accounts/create", {method:"POST", admin:true, body:{qr:qr, name:name}}).then(function(res){
+            if(!res.ok){ acctMsg.textContent = res.error || "開帳戶失敗。"; return; }
+            acctMsg.textContent = res.existed ? ("呢個帳戶已經開咗：" + qr + "。") : ("已開帳戶：" + qr + (name ? "（" + name + "）" : "（未補名）") + "。");
+            document.getElementById("newAcctQr").value = "";
+            document.getElementById("newAcctName").value = "";
+            loadAdminData();
+          });
+        });
+
+        /* 相機掃 QR Code：用內置 BarcodeDetector，唔支援就手動輸入。 */
+        var scanStream = null;
+        var scanTimer = null;
+        function stopScan(){
+          if(scanTimer){ clearTimeout(scanTimer); scanTimer = null; }
+          if(scanStream){ scanStream.getTracks().forEach(function(t){ t.stop(); }); scanStream = null; }
+          document.getElementById("scanBox").hidden = true;
+        }
+        document.getElementById("btnStopScan").addEventListener("click", stopScan);
+        document.getElementById("btnScanAccount").addEventListener("click", async function(){
+          var statusEl = document.getElementById("scanStatus");
+          if(!("BarcodeDetector" in window)){
+            statusEl.textContent = "呢部機唔支援相機掃碼，請喺下面手動輸入 QR Code 內容。";
+            document.getElementById("scanBox").hidden = true;
+            return;
+          }
+          var video = document.getElementById("scanVideo");
+          try{
+            scanStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
+          }catch(e){
+            statusEl.textContent = "開唔到相機，請檢查瀏覽器相機授權，或者手動輸入 QR Code 內容。";
+            return;
+          }
+          document.getElementById("scanBox").hidden = false;
+          video.srcObject = scanStream;
+          try{ await video.play(); }catch(e){}
+          statusEl.textContent = "對準客人張卡嘅 QR Code…";
+          var detector = new BarcodeDetector({formats:["qr_code"]});
+          var tick = async function(){
+            if(!scanStream) return;
+            try{
+              var codes = await detector.detect(video);
+              if(codes && codes.length){
+                var val = (codes[0].rawValue || "").trim();
+                if(val){
+                  stopScan();
+                  document.getElementById("newAcctQr").value = val;
+                  statusEl.textContent = "掃到：" + val + "，請填埋客人姓名再撳「開帳戶」。";
+                  document.getElementById("newAcctName").focus();
+                  return;
+                }
+              }
+            }catch(e){}
+            scanTimer = setTimeout(tick, 300);
+          };
+          tick();
+        });
+
+        /* CSV 匯入：每行「QR Code,客人姓名」。 */
+        function parseCsv(text){
+          var rows = [];
+          var lines = String(text || "").replace(/^\uFEFF/, "").split(/\r?\n/);
+          lines.forEach(function(line){
+            if(!line.trim()) return;
+            var cells = [];
+            var cur = "", inQ = false;
+            for(var i=0;i<line.length;i++){
+              var ch = line[i];
+              if(ch === '"'){ inQ = !inQ; continue; }
+              if(ch === "," && !inQ){ cells.push(cur); cur = ""; continue; }
+              cur += ch;
+            }
+            cells.push(cur);
+            var qr = (cells[0] || "").trim();
+            var name = (cells[1] || "").trim();
+            if(/^(qr|QR|登入|code|編號)/i.test(qr) && !name) return; // 標題行
+            if(qr) rows.push({qr:qr, name:name});
+          });
+          return rows;
+        }
+        function importCsvRows(rows){
+          if(rows.length === 0){ csvMsg.textContent = "搵唔到可以匯入嘅行，請檢查格式係每行「QR Code,客人姓名」。"; return; }
+          api("/api/admin/accounts/import", {method:"POST", admin:true, body:{rows:rows}}).then(function(res){
+            if(!res.ok){ csvMsg.textContent = res.error || "匯入失敗。"; return; }
+            csvMsg.textContent = "匯入完成：新增 " + res.created + " 個帳戶，更新咗 " + res.updated + " 個名，跳過 " + res.skipped + " 行。";
+            document.getElementById("csvText").value = "";
+            loadAdminData();
+          });
+        }
+        document.getElementById("btnImportCsv").addEventListener("click", function(){
+          importCsvRows(parseCsv(document.getElementById("csvText").value));
+        });
+        document.getElementById("btnCsvFile").addEventListener("click", function(){
+          document.getElementById("fileCsv").click();
+        });
+        document.getElementById("fileCsv").addEventListener("change", function(){
+          var f = this.files[0];
+          this.value = "";
+          if(!f) return;
+          var reader = new FileReader();
+          reader.onload = function(){ importCsvRows(parseCsv(reader.result)); };
+          reader.readAsText(f);
         });
 
         document.getElementById("btnAdminAsUser").addEventListener("click", function(){
