@@ -98,9 +98,11 @@
   button,select,input,textarea{font:inherit}
   button,a.btn{min-height:44px}
   .wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   .rounded{font-family:"M PLUS Rounded 1c","Noto Sans TC",sans-serif}
 
-  .site-head{background:var(--bg);border-bottom:1px solid var(--line)}
+  .site-head{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
+  section[id]{scroll-margin-top:76px}
   .site-head-in{display:flex;align-items:center;gap:16px;padding-top:10px;padding-bottom:10px}
   .site-nav{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
   .site-nav a{text-decoration:none;font-weight:700;font-size:.92rem;color:#6B4232;padding:9px 12px;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;white-space:nowrap}
@@ -240,7 +242,7 @@
   <div class="wrap hero-inner">
     <div>
       <span class="heart">♥ 觀塘美甲 ・ 預約制</span>
-      <h1><span class="sugar">Sugar</span> Nail</h1>
+      <h1 class="sr-only">Sugar Nail — 觀塘一人美甲工作室</h1>
       <div class="hero-logo-h"><img class="hero-logo" src="assets/logo-transparent.png" alt="Sugar Nail — Nail Carving Art" width="470" height="149" /></div>
       <p class="hero-sub">甜甜的指尖，畫出你鍾意嘅公仔 ♥</p>
       <p class="lead">Sugar Nail 專做可愛卡通全手繪同 3D 粉雕，亦有貓眼、鏡面等流行款式。每一隻公仔、每一粒立體蝴蝶結都係人手畫、人手雕，唔係貼紙。</p>
@@ -653,16 +655,14 @@
     return (t.getAttribute('data-cat') || '').split(' ').indexOf(curFilter) >= 0;
   }
   function render(){
-    var total = 0, shown = 0;
+    var total = 0;
     tiles.forEach(function(t){
       if(!tileMatches(t)){ t.hidden = true; return; }
       total++;
-      if(total <= shownLimit){ t.hidden = false; shown++; }
-      else { t.hidden = true; }
+      t.hidden = false;
     });
-    hasMoreNow = shown < total;
-    if(moreBtn) moreBtn.hidden = !hasMoreNow;
-    if(doneEl) doneEl.hidden = hasMoreNow;
+    hasMoreNow = false;
+    if(moreWrap) moreWrap.hidden = true;
   }
   function loadMore(){ if(!hasMoreNow) return; shownLimit += BATCH; render(); }
   function maybeLoad(){
@@ -697,6 +697,17 @@
     });
   });
   render();
+
+  document.querySelectorAll('.site-nav a[href^="#"]').forEach(function(a){
+    a.addEventListener('click', function(ev){
+      var target = document.getElementById(a.getAttribute('href').slice(1));
+      if(!target) return;
+      ev.preventDefault();
+      history.replaceState(null, '', a.getAttribute('href'));
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(function(){ target.scrollIntoView({ behavior: 'auto', block: 'start' }); }, 600);
+    });
+  });
 
   var fields = ['f-name','f-date','f-time','f-svc','f-note'].map(function(id){ return document.getElementById(id); });
   var out = document.getElementById('msgOut');
