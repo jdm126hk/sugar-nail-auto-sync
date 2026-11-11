@@ -1,0 +1,36 @@
+name: Deploy Try-on Worker
+
+# Worker 檔案一改就自動部署。唔會掂到主網站（Pages 嗰邊）。
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "workers/tryon-api/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          workingDirectory: workers/tryon-api
+      # 每次部署都重新寫入兩個密碼核對值（Worker secrets），
+      # 來源係 repo Secrets TRYON_GUEST_PASSWORD_HASH /
+      # TRYON_ADMIN_PASSWORD_HASH（SHA-256 hex，唔係密碼本身）。
+      - name: Set guest password hash secret
+        run: printf '%s' "${{ secrets.TRYON_GUEST_PASSWORD_HASH }}" | npx -y wrangler secret put GUEST_PASSWORD_HASH
+        working-directory: workers/tryon-api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+      - name: Set admin password hash secret
+        run: printf '%s' "${{ secrets.TRYON_ADMIN_PASSWORD_HASH }}" | npx -y wrangler secret put ADMIN_PASSWORD_HASH
+        working-directory: workers/tryon-api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
