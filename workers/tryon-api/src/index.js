@@ -530,6 +530,42 @@ async function handleAdminAccountsImport(request, env) {
   return json({ ok: true, created, updated, skipped });
 }
 
+/* 店主撳「同步客戶資料」：記低請求，等 Muse 定期檢查到就去 Pass2U 匯出再匯入。 */
+async function handleAdminSyncRequest(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  if (request.method === "GET") {
+    const raw = await env.TRYON_KV.get("sync-request");
+    const lastRaw = await env.TRYON_KV.get("sync-status");
+    return json({
+      ok: true,
+      request: raw ? JSON.parse(raw) : null,
+      lastSync: lastRaw ? JSON.parse(lastRaw) : null,
+    });
+  }
+  const req = { status: "pending", requestedAt: Date.now() };
+  await env.TRYON_KV.put("sync-request", JSON.stringify(req));
+  return json({ ok: true, request: req });
+}
+
+/* Muse 做完同步之後記低結果，同時清走請求。 */
+async function handleAdminSyncComplete(request, env) {
+  if (!(await requireAdmin(request, env))) {
+    return json({ ok: false, error: "請先以店主身份登入" }, 401);
+  }
+  const body = await request.json().catch(() => ({}));
+  const status = {
+    at: Date.now(),
+    created: typeof body?.created === "number" ? body.created : 0,
+    updated: typeof body?.updated === "number" ? body.updated : 0,
+    total: typeof body?.total === "number" ? body.total : 0,
+  };
+  await env.TRYON_KV.put("sync-status", JSON.stringify(status));
+  await env.TRYON_KV.delete("sync-request");
+  return json({ ok: true, lastSync: status });
+}
+
 // ---------------- 路由 ----------------
 
 export default {
@@ -579,6 +615,12 @@ export default {
     }
     if (path === "/api/admin/accounts/import" && request.method === "POST") {
       return handleAdminAccountsImport(request, env);
+    }
+    if (path === "/api/admin/sync-request" && (request.method === "GET" || request.method === "POST")) {
+      return handleAdminSyncRequest(request, env);
+    }
+    if (path === "/api/admin/sync-complete" && request.method === "POST") {
+      return handleAdminSyncComplete(request, env);
     }
 
     return json({ ok: false, error: "not found" }, 404);
