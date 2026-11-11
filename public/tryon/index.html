@@ -238,15 +238,15 @@
           <span class="step-num" aria-hidden="true">✓</span>
           <h2 id="loginTitle">套票客人登入</h2>
         </div>
-        <p class="hint">登入咗先可以上傳手相同提交試甲申請。登入 ID 係你張卡上面嘅 QR Code 內容，密碼係套票客人共用密碼；密碼會傳去伺服器核對，唔會顯示喺呢頁。每人每日最多申請 3 次，次數由伺服器按你嘅登入 ID 計算。</p>
+        <p class="hint">登入咗先可以上傳手相同提交試甲申請。</p>
         <form id="loginForm" novalidate>
           <label class="field">
             <span>登入 ID（你張卡上面 QR Code 嘅內容）</span>
             <input type="text" id="loginId" autocomplete="username" placeholder="輸入 QR Code 內容，例如卡上面嗰串編號" />
           </label>
           <label class="field">
-            <span>密碼（套票客人共用密碼）</span>
-            <input type="password" id="loginPw" autocomplete="current-password" placeholder="輸入店主提供嘅共用密碼" />
+            <span>密碼</span>
+            <input type="password" id="loginPw" autocomplete="current-password" placeholder="輸入店主提供嘅密碼" />
           </label>
           <div class="error" id="loginError" role="alert"></div>
           <div class="btn-row">
@@ -379,24 +379,13 @@
         <p class="privacy-note">你喺呢頁揀嘅手相唔會自動傳去任何地方；要去到 WhatsApp 對話親手附相傳送，店主先會收到，再用嚟生成效果圖，唔會公開、唔會放上網站或社交平台。</p>
       </div>
 
-      <!-- 店主管理（同套票客登入分開） -->
-      <section class="card" id="adminCard" aria-labelledby="adminTitle">
+      <!-- 店主管理（唔公開顯示：登入 ID 打 admin 先入到，登入後先顯示呢一欄） -->
+      <section class="card" id="adminCard" aria-labelledby="adminTitle" style="display:none">
         <div class="step-head">
           <span class="step-num" aria-hidden="true">店</span>
-          <h2 id="adminTitle">店主管理登入</h2>
+          <h2 id="adminTitle">店主管理</h2>
         </div>
-        <p class="hint">呢個係店主專用入口，同上面套票客登入唔同：要用店主管理密碼入，唔係客人共用密碼。密碼會傳去伺服器核對。入到嚟可以睇每個人今日用咗幾多次、今日收到嘅申請、逐個人重設今日次數，同埋直接切換去用家模式試甲。</p>
-        <form id="adminForm" novalidate>
-          <label class="field">
-            <span>店主管理密碼</span>
-            <input type="password" id="adminPw" autocomplete="current-password" placeholder="輸入店主管理密碼（唔係客人共用密碼）" />
-          </label>
-          <div class="error" id="adminError" role="alert"></div>
-          <div class="btn-row">
-            <button type="submit" class="btn" id="adminBtn">登入管理</button>
-          </div>
-        </form>
-
+        <p class="hint">呢度可以睇每個人今日用咗幾多次、逐人重設次數，同埋睇今日收到嘅申請。</p>
         <div id="adminPanel" hidden>
           <div class="btn-row" style="margin-top:18px">
             <button class="btn ghost small" id="btnRefreshAdmin" type="button">重新載入用量同申請</button>
@@ -444,6 +433,7 @@
         "use strict";
         var API = "https://sugarnail-tryon-api.merokoho1029.workers.dev";
         var TEST_ID = "TEST";
+
 
         var state = {
           memberId: null,      /* 客人登入 ID（QR Code 內容） */
@@ -554,6 +544,26 @@
           }
           loginBtn.disabled = true;
           loginBtn.textContent = "登入中…";
+          /* 登入 ID 打 admin：行店主登入（同一個表單，唔另開位）。 */
+          if(id.toUpperCase() === "ADMIN"){
+            api("/api/admin/login", {method:"POST", body:{password:pw}}).then(function(res){
+              loginBtn.disabled = false;
+              loginBtn.textContent = "登入";
+              document.getElementById("loginPw").value = "";
+              if(!res.ok){
+                loginError.textContent = res.error || "店主登入失敗，請再試一次。";
+                loginError.classList.add("show");
+                return;
+              }
+              state.adminToken = res.token || res.adminToken;
+              loginCard.hidden = true;
+              document.getElementById("adminCard").style.display = "";
+              adminPanel.hidden = false;
+              loadAdminData();
+              document.getElementById("adminCard").scrollIntoView({behavior:"smooth", block:"start"});
+            });
+            return;
+          }
           api("/api/login", {method:"POST", body:{qr:id, password:pw}}).then(function(res){
             loginBtn.disabled = false;
             loginBtn.textContent = "登入";
@@ -707,11 +717,8 @@
         });
 
         /* ---------- 店主管理：伺服器登入 / 用量 / 申請 / 逐人重設 ---------- */
-        var adminForm = document.getElementById("adminForm");
-        var adminError = document.getElementById("adminError");
         var adminPanel = document.getElementById("adminPanel");
         var adminMsg = document.getElementById("adminMsg");
-        var adminBtn = document.getElementById("adminBtn");
         var usageList = document.getElementById("usageList");
         var requestList = document.getElementById("requestList");
 
@@ -822,34 +829,6 @@
           });
         }
 
-        adminForm.addEventListener("submit", function(e){
-          e.preventDefault();
-          var pw = document.getElementById("adminPw").value;
-          adminError.classList.remove("show");
-          if(!pw){
-            adminError.textContent = "請輸入店主管理密碼。";
-            adminError.classList.add("show");
-            return;
-          }
-          adminBtn.disabled = true;
-          adminBtn.textContent = "登入中…";
-          api("/api/admin/login", {method:"POST", body:{password:pw}}).then(function(res){
-            adminBtn.disabled = false;
-            adminBtn.textContent = "登入管理";
-            document.getElementById("adminPw").value = "";
-            if(!res.ok){
-              adminError.textContent = res.error || "店主登入失敗，請再試一次。";
-              adminError.classList.add("show");
-              return;
-            }
-            state.adminToken = res.token || res.adminToken;
-            adminPanel.hidden = false;
-            adminForm.hidden = true;
-            loadAdminData();
-            adminPanel.scrollIntoView({behavior:"smooth", block:"start"});
-          });
-        });
-
         document.getElementById("btnRefreshAdmin").addEventListener("click", function(){
           adminMsg.textContent = "";
           loadAdminData();
@@ -873,10 +852,10 @@
 
         document.getElementById("adminLogoutBtn").addEventListener("click", function(){
           state.adminToken = null;
-          document.getElementById("adminPw").value = "";
           adminPanel.hidden = true;
-          adminForm.hidden = false;
-          document.getElementById("adminCard").scrollIntoView({behavior:"smooth", block:"start"});
+          document.getElementById("adminCard").style.display = "none";
+          loginCard.hidden = false;
+          loginCard.scrollIntoView({behavior:"smooth", block:"start"});
         });
       })();
 
