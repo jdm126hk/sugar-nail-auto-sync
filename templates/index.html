@@ -98,9 +98,11 @@
   button,select,input,textarea{font:inherit}
   button,a.btn{min-height:44px}
   .wrap{max-width:1120px;margin:0 auto;padding:0 18px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   .rounded{font-family:"M PLUS Rounded 1c","Noto Sans TC",sans-serif}
 
-  .site-head{background:var(--bg);border-bottom:1px solid var(--line)}
+  .site-head{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
+  section[id]{scroll-margin-top:76px}
   .site-head-in{display:flex;align-items:center;gap:16px;padding-top:10px;padding-bottom:10px}
   .site-nav{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
   .site-nav a{text-decoration:none;font-weight:700;font-size:.92rem;color:#6B4232;padding:9px 12px;border-radius:999px;min-height:40px;display:inline-flex;align-items:center;white-space:nowrap}
@@ -108,7 +110,7 @@
   @media (max-width:520px){.site-nav a{font-size:.85rem;padding:8px 9px}}
 
   .hero{position:relative;overflow:hidden;background:linear-gradient(160deg,var(--bg2),var(--pink-soft) 55%,var(--bg));border-bottom:1px solid var(--line)}
-  .hero-inner{display:grid;grid-template-columns:1.05fr .95fr;gap:28px;align-items:center;padding:34px 0 40px}
+  .hero-inner{display:grid;grid-template-columns:1.05fr .95fr;gap:28px;align-items:center;padding:34px 18px 40px}
   @media (max-width:860px){.hero-inner{grid-template-columns:1fr}}
   .heart{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);color:var(--brown);font-weight:700;font-size:.85rem;padding:7px 14px;border-radius:999px;box-shadow:var(--shadow)}
   h1{font-family:"M PLUS Rounded 1c","Noto Sans TC",sans-serif;font-weight:800;font-size:clamp(2.4rem,6vw,4rem);line-height:1.08;letter-spacing:.04em;margin:16px 0 4px;color:var(--brown-deep)}
@@ -167,6 +169,15 @@
   .ig-strip p{margin:0;color:var(--ink2);font-size:.93rem}
   .ig-strip a{font-weight:800;color:var(--pink-deep)}
 
+  .tryon-card{background:var(--pink-soft);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px;box-shadow:var(--shadow)}
+  .tryon-card h3{margin:0 0 10px;color:var(--brown-deep);font-size:1.25rem}
+  .tryon-card>p{margin:0 0 14px;color:var(--ink2)}
+  .tryon-points{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:8px}
+  .tryon-points li{display:flex;gap:10px;align-items:flex-start;color:var(--ink2)}
+  .tryon-points li::before{content:"♥";color:var(--pink-deep);font-weight:800;flex:none}
+  .tryon-points li b{color:var(--ink)}
+  .tryon-note{font-size:.88rem;color:var(--muted);margin:14px 0 0}
+
   .svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
   @media (max-width:860px){.svc-grid{grid-template-columns:1fr}}
   .svc{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;box-shadow:var(--shadow)}
@@ -222,7 +233,7 @@
 <div class="site-head">
   <div class="wrap site-head-in">
     <nav class="site-nav" aria-label="主要導覽">
-      <a href="#works">作品</a><a href="#services">服務</a><a href="#booking">預約</a><a href="#contact">聯絡</a><a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG @sugar_nail2008</a>
+      <a href="#works">作品</a><a href="#tryon">試甲效果</a><a href="#services">服務</a><a href="#booking">預約</a><a href="#contact">聯絡</a><a href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG @sugar_nail2008</a>
     </nav>
   </div>
 </div>
@@ -231,7 +242,7 @@
   <div class="wrap hero-inner">
     <div>
       <span class="heart">♥ 觀塘美甲 ・ 預約制</span>
-      <h1><span class="sugar">Sugar</span> Nail</h1>
+      <h1 class="sr-only">Sugar Nail — 觀塘一人美甲工作室</h1>
       <div class="hero-logo-h"><img class="hero-logo" src="assets/logo-transparent.png" alt="Sugar Nail — Nail Carving Art" width="470" height="149" /></div>
       <p class="hero-sub">甜甜的指尖，畫出你鍾意嘅公仔 ♥</p>
       <p class="lead">Sugar Nail 專做可愛卡通全手繪同 3D 粉雕，亦有貓眼、鏡面等流行款式。每一隻公仔、每一粒立體蝴蝶結都係人手畫、人手雕，唔係貼紙。</p>
@@ -241,14 +252,13 @@
       <div class="cta-row">
         <a class="btn btn-wa" href="https://wa.me/85298439868" target="_blank" rel="noopener">WhatsApp 預約</a>
         <a class="btn btn-ig" href="https://www.instagram.com/sugar_nail2008/" target="_blank" rel="noopener">IG DM 預約</a>
-        <a class="btn btn-ghost" href="#works">睇作品</a>
       </div>
       <p class="hero-note">預約只經 WhatsApp 及 IG DM</p>
     </div>
     <div>
       <a class="hero-photo" href="https://www.instagram.com/p/Dd8xuoSvhGT/" target="_blank" rel="noopener">
         <img src="assets/pompom.jpg" alt="Sugar Nail 招牌作品：布甸狗 3D 粉雕" />
-        <span class="hero-badge"><b>招牌作品：布甸狗 3D 粉雕</b><span>本店真實作品 ・ 點圖去 IG 原 Post 睇 →</span></span>
+        <span class="hero-badge"><b>招牌作品：布甸狗 3D 粉雕</b><span>點圖去 IG 原 Post 睇 →</span></span>
       </a>
       <p class="hero-src">相片來源：<a href="https://www.instagram.com/p/Dd8xuoSvhGT/" target="_blank" rel="noopener">IG 原 Post @sugar_nail2008</a></p>
     </div>
@@ -295,11 +305,33 @@
     </div>
   </section>
 
+  <section id="tryon">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>試甲效果預覽</h2>
+        <p>想睇下隻手做咗某款之後係咩樣？上傳一張你隻手嘅相，揀一款作品，系統會幫你整一張效果圖參考。</p>
+      </div>
+      <div class="tryon-card">
+        <h3>點樣試？</h3>
+        <ul class="tryon-points">
+          <li><p><b>上傳手相：</b>影一張你隻手嘅相，十隻手指甲入鏡、光線好、背景簡單，效果會準啲。</p></li>
+          <li><p><b>揀一款作品：</b>喺上面作品牆揀一款鍾意嘅款式，或者上傳一張作品相做參考。</p></li>
+          <li><p><b>每日每人最多 3 次：</b>每人每日最多可以生成 3 張效果圖，用晒要等聽日。</p></li>
+          <li><p><b>要登入先用到：</b>試甲頁面要登入先用到，用套票卡上面 QR Code 嗰串號碼登入。</p></li>
+        </ul>
+        <div class="cta-row">
+          <a class="btn btn-ig" href="/tryon/">登入試甲</a>
+        </div>
+        <p class="tryon-note">效果預覽，實際以到店為準。你上傳嘅手相只用嚟生成效果圖，唔會公開。</p>
+      </div>
+    </div>
+  </section>
+
   <section id="services" class="alt">
     <div class="wrap">
       <div class="sec-head">
         <h2>服務項目</h2>
-        <p>呢度只介紹款式同風格，唔顯示收費。想知收費，請直接 WhatsApp 或 IG DM 查詢。</p>
+        <p>歡迎查詢：WhatsApp / IG DM 來圖報價。</p>
       </div>
       <div class="svc-grid">
         <article class="svc">
@@ -432,7 +464,7 @@
   var moreBtn = document.getElementById('loadMoreBtn');
   var doneEl = document.getElementById('worksDone');
   var moreWrap = document.getElementById('worksMore');
-  var BATCH = 20;
+  var BATCH = 28;
   var curFilter = 'all';
   var shownLimit = BATCH;
   var hasMoreNow = false;
@@ -449,31 +481,12 @@
       else { t.hidden = true; }
     });
     hasMoreNow = shown < total;
+    if(moreWrap) moreWrap.hidden = false;
     if(moreBtn) moreBtn.hidden = !hasMoreNow;
     if(doneEl) doneEl.hidden = hasMoreNow;
   }
   function loadMore(){ if(!hasMoreNow) return; shownLimit += BATCH; render(); }
-  function maybeLoad(){
-    if(!moreWrap) return;
-    var guard = 0;
-    while(hasMoreNow && guard < 15){
-      var r = moreWrap.getBoundingClientRect();
-      if(r.top < window.innerHeight + 900){ loadMore(); guard++; }
-      else break;
-    }
-  }
-  if(moreBtn) moreBtn.addEventListener('click', function(){ loadMore(); maybeLoad(); });
-  if('IntersectionObserver' in window && moreWrap){
-    var mio = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){ if(e.isIntersecting) maybeLoad(); });
-    }, { rootMargin: '900px' });
-    mio.observe(moreWrap);
-  }
-  var ticking = false;
-  window.addEventListener('scroll', function(){
-    if(ticking) return; ticking = true;
-    requestAnimationFrame(function(){ ticking = false; maybeLoad(); });
-  }, { passive: true });
+  if(moreBtn) moreBtn.addEventListener('click', function(){ loadMore(); });
   btns.forEach(function(b){
     b.addEventListener('click', function(){
       btns.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
@@ -481,10 +494,20 @@
       curFilter = b.getAttribute('data-filter');
       shownLimit = BATCH;
       render();
-      maybeLoad();
     });
   });
   render();
+
+  document.querySelectorAll('.site-nav a[href^="#"]').forEach(function(a){
+    a.addEventListener('click', function(ev){
+      var target = document.getElementById(a.getAttribute('href').slice(1));
+      if(!target) return;
+      ev.preventDefault();
+      history.replaceState(null, '', a.getAttribute('href'));
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(function(){ target.scrollIntoView({ behavior: 'auto', block: 'start' }); }, 600);
+    });
+  });
 
   var fields = ['f-name','f-date','f-time','f-svc','f-note'].map(function(id){ return document.getElementById(id); });
   var out = document.getElementById('msgOut');
