@@ -259,8 +259,8 @@
         <p class="hint">登入咗先可以上傳手相同提交試甲申請。</p>
         <form id="loginForm" novalidate>
           <label class="field">
-            <span>登入 ID（你張卡上面 QR Code 嘅內容）</span>
-            <input type="text" id="loginId" autocomplete="username" placeholder="輸入 QR Code 內容，例如卡上面嗰串編號" />
+            <span>登入 ID（套票卡上面 QR Code 嗰串號碼）</span>
+            <input type="text" id="loginId" autocomplete="username" placeholder="輸入套票卡上面 QR Code 嗰串號碼" />
           </label>
           <label class="field">
             <span>密碼</span>
@@ -683,7 +683,7 @@
           var pw = document.getElementById("loginPw").value;
           loginError.classList.remove("show");
           if(!id || !pw){
-            loginError.textContent = "請輸入登入 ID 同密碼。登入 ID 係你張卡上面 QR Code 嘅內容。";
+            loginError.textContent = "請輸入登入 ID 同密碼。登入 ID 係套票卡上面 QR Code 嗰串號碼。";
             loginError.classList.add("show");
             return;
           }
