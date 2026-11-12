@@ -1033,7 +1033,7 @@
           if(myTimer) return;
           myTimer = setInterval(function(){
             if(state.token) loadMyRequests();
-          }, 30000);
+          }, 300000);
         }
         function loadMyRequests(){
           if(!state.token) return Promise.resolve();
