@@ -1,7 +1,21 @@
 {
-  "generated_at": "2026-11-12T02:45:38.929086+00:00",
+  "generated_at": "2026-11-13T02:45:01.646223+00:00",
   "source": "seed-catalogue-2026-11-11",
   "posts": [
+    {
+      "id": "seed-DfocipuPbGq",
+      "shortcode": "DfocipuPbGq",
+      "permalink": "https://www.instagram.com/p/DfocipuPbGq/",
+      "caption": "",
+      "media_type": "IMAGE",
+      "timestamp": "2026-11-11T00:00:00+00:00",
+      "image": "https://www.instagram.com/p/DfocipuPbGq/media/?size=l",
+      "style": "格仔款，裸色底＋黑色蝴蝶結、水鑽",
+      "categories": [
+        "other"
+      ],
+      "local_image": "assets/images/DfocipuPbGq.jpg"
+    },
     {
       "id": "seed-Dfl698OP1jI",
       "shortcode": "Dfl698OP1jI",
