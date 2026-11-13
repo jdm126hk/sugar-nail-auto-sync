@@ -68,8 +68,11 @@ def main() -> int:
     gallery = "\n".join(tile(p) for p in posts)
     page = template.replace("<!--GALLERY-->", gallery)
 
+    # 用戶 2026-11-12 明確要求嘅登入 ID 寫法「套票卡上面 QR Code 下面的號碼」
+    # 係唯一獲准出現嘅「套票」字眼，檢查前先剔走佢；其他套票提及照樣擋。
+    check_page = page.replace("套票卡上面 QR Code 下面的號碼", "")
     for word in FORBIDDEN:
-        if word in page:
+        if word in check_page:
             print(f"錯誤：輸出含有禁字 {word!r}，停止 build。", file=sys.stderr)
             return 2
 
@@ -93,6 +96,14 @@ def main() -> int:
         if pom.exists():
             shutil.copy2(pom, out / "assets" / "pompom.jpg")
             break
+
+    # 試甲頁（tryon/index.html 係 artifact 匯出嘅獨立頁，駁咗 Worker API），
+    # 每次 build 都一齊 copy 去 public/tryon/，唔好直接放喺 public/ 入面，
+    # 因為上面開頭會成個 public/ 刪咗再起。
+    tryon_src = ROOT / "tryon" / "index.html"
+    if tryon_src.exists():
+        (out / "tryon").mkdir(parents=True, exist_ok=True)
+        shutil.copy2(tryon_src, out / "tryon" / "index.html")
 
     # 公開版 feed.json：唔含 timestamp（唔顯示日期）
     public_feed = {
