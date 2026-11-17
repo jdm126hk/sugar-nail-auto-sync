@@ -1,7 +1,21 @@
 {
-  "generated_at": "2026-11-16T02:40:00+00:00",
+  "generated_at": "2026-11-17T02:44:05+00:00",
   "source": "seed-catalogue-2026-11-11",
   "posts": [
+    {
+      "id": "seed-DfymN3bvXQf",
+      "shortcode": "DfymN3bvXQf",
+      "permalink": "https://www.instagram.com/p/DfymN3bvXQf/",
+      "caption": "",
+      "media_type": "IMAGE",
+      "timestamp": "2026-11-15T00:00:00+00:00",
+      "image": "https://www.instagram.com/p/DfymN3bvXQf/media/?size=l",
+      "style": "全手繪 Jellycat 公仔，牛角包、吐司、牛油果、茄子、車厘子，裸色閃粉底",
+      "categories": [
+        "hand"
+      ],
+      "local_image": "assets/images/DfymN3bvXQf.jpg"
+    },
     {
       "id": "seed-DfwQCR-vwWx",
       "shortcode": "DfwQCR-vwWx",
