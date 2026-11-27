@@ -1,7 +1,21 @@
 {
-  "generated_at": "2026-11-26T10:40:00+08:00",
+  "generated_at": "2026-11-27T10:40:00+08:00",
   "source": "seed-catalogue-2026-11-11",
   "posts": [
+    {
+      "id": "seed-DgM35dePv5f",
+      "shortcode": "DgM35dePv5f",
+      "permalink": "https://www.instagram.com/p/DgM35dePv5f/",
+      "caption": "",
+      "media_type": "IMAGE",
+      "timestamp": "2026-11-26T00:00:00+00:00",
+      "image": "https://www.instagram.com/p/DgM35dePv5f/media/?size=l",
+      "style": "白金色法式，金色金屬線條＋水鑽",
+      "categories": [
+        "other"
+      ],
+      "local_image": "assets/images/DgM35dePv5f.jpg"
+    },
     {
       "id": "seed-DgJoulbvZ-A",
       "shortcode": "DgJoulbvZ-A",
